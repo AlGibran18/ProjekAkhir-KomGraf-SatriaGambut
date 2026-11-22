@@ -44,6 +44,7 @@ func _build_arrow() -> void:
 	add_child(pointer)
 	arrow_material = StandardMaterial3D.new()
 	arrow_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	arrow_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	arrow_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	arrow_material.albedo_color = Color(0.15, 0.95, 0.77, 0.68)
 	arrow_material.emission_enabled = true
@@ -58,15 +59,23 @@ func _build_arrow() -> void:
 	shaft.position = Vector3(0, 0, 0.12)
 	shaft.material_override = arrow_material
 	pointer.add_child(shaft)
-	# Tip is a distinct prism to remain readable from either viewpoint.
+	# A proper broad triangle arrowhead, not a rectangular prism.
+	# Tip faces -Z, with a clear point and wide shoulders.
 	var tip: MeshInstance3D = MeshInstance3D.new()
-	tip.name = "ArrowTip"
-	var prism: PrismMesh = PrismMesh.new()
-	prism.size = Vector3(0.36, 0.045, 0.38)
-	tip.mesh = prism
-	tip.rotation.y = PI
-	tip.position = Vector3(0, 0, -0.22)
+	tip.name = "TriangleArrowHead"
+	var triangle: ArrayMesh = ArrayMesh.new()
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = PackedVector3Array([
+		Vector3(0.0, 0.0, -0.50),
+		Vector3(-0.26, 0.0, -0.02),
+		Vector3(0.26, 0.0, -0.02)
+	])
+	arrays[Mesh.ARRAY_INDEX] = PackedInt32Array([0, 1, 2])
+	triangle.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	tip.mesh = triangle
 	tip.material_override = arrow_material
+	tip.position = Vector3(0.0, 0.015, -0.13)
 	pointer.add_child(tip)
 	visible = false
 
