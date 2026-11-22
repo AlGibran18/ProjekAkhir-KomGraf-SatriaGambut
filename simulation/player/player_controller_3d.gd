@@ -18,6 +18,7 @@ var safe_spawn_pos: Vector3 = Vector3(24.0, 0.25, 4.5)
 var ground_plane: Plane = Plane(Vector3.UP, 0.0)
 var was_near_well: bool = false
 var head_bob_time: float = 0.0
+var cinematic_mode_enabled: bool = false
 
 func _ready() -> void:
 	floor_snap_length = 0.3
@@ -62,7 +63,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				AudioManager.play_sfx("refill", -3.0)
 				EventBus.educational_toast.emit("Air berhasil ditransfer dari sumur!", false)
 
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+	if not cinematic_mode_enabled and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		elif current_targeted_cell != Vector2i(-1, -1):
@@ -111,7 +112,7 @@ func _physics_process(delta: float) -> void:
 	_check_well_proximity(delta)
 
 	var is_acting: bool = false
-	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	if not cinematic_mode_enabled and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if GameState.current_tool == ToolEnums.ToolType.SEMPROT_PERMUKAAN or GameState.current_tool == ToolEnums.ToolType.TOMBAK_GAMBUT:
 			if current_targeted_cell != Vector2i(-1, -1) and grid_simulator != null:
 				grid_simulator.apply_continuous_tool(current_targeted_cell, GameState.current_tool, delta)
