@@ -12,6 +12,10 @@ var outbreak_started: bool = false
 var warned_subsurface_once: bool = false
 var warned_empty_water_once: bool = false
 var active_injection_pos: Vector2i = Vector2i(-1, -1)
+# Pos pengamatan di sisi utara hutan; terbakar berarti misi perlindungan gagal.
+var station_cell: Vector2i = Vector2i(8, 1)
+var last_warning_tick: int = -999
+var tick_count: int = 0
 
 func _ready() -> void:
 	EventBus.cell_clicked.connect(_on_cell_clicked)
@@ -33,6 +37,7 @@ func initialize_level(level_idx: int) -> void:
 	warned_empty_water_once = false
 	active_injection_pos = Vector2i(-1, -1)
 	tick_timer = 0.0
+	tick_count = 0
 	cells.clear()
 
 	var center_hazard: Vector2 = Vector2(float(grid_width) * 0.56, float(grid_height) * 0.62)
@@ -61,7 +66,15 @@ func initialize_level(level_idx: int) -> void:
 			cells[pos] = cell
 			EventBus.cell_state_updated.emit(pos, cell)
 
+	GameState.initial_carbon_tons = _sum_carbon()
 	_update_stats()
+
+func _sum_carbon() -> float:
+	var total: float = 0.0
+	for item in cells.values():
+		var cell: PeatCellData = item
+		total += cell.carbon_tons
+	return total
 
 func toggle_well_at(pos: Vector2i) -> bool:
 	if not cells.has(pos):
@@ -70,6 +83,7 @@ func toggle_well_at(pos: Vector2i) -> bool:
 	if cell.has_well:
 		cell.has_well = false
 		GameState.placed_wells.erase(pos)
+		GameState.well_reserves.erase(pos)
 		EventBus.well_removed.emit(pos)
 		EventBus.cell_state_updated.emit(pos, cell)
 		return true
@@ -79,9 +93,7 @@ func toggle_well_at(pos: Vector2i) -> bool:
 		return false
 
 	cell.has_well = true
-	cell.water_table = -10.0
-	cell.soil_moisture = 0.85
-	cell.recalculate_pfvi()
+	GameState.well_reserves[pos] = GameState.WELL_MAX_RESERVE
 	GameState.placed_wells.append(pos)
 	EventBus.well_placed.emit(pos)
 	EventBus.cell_state_updated.emit(pos, cell)
@@ -136,6 +148,8 @@ func start_outbreak() -> void:
 	EventBus.educational_toast.emit("WABAH KEBAKARAN! Gunakan [1] Sekat Bakar, [2] Semprot, [Tab] Thermal, dan [3] Tombak Gambut!", false)
 
 func _simulate_tick() -> void:
+	tick_count += 1
+	_apply_well_hydration()
 	var pending_ignitions: Array[Vector2i] = []
 	var pending_ember_spreads: Array[Vector2i] = []
 
@@ -194,7 +208,46 @@ func _simulate_tick() -> void:
 				EventBus.cell_state_updated.emit(ember_pos, target_sub)
 
 	_update_stats()
+	_check_station_status()
 	_check_mission_outcome()
+
+# Sumur menyuplai air ke petak sekitar secara bertahap, dengan cadangan terbatas.
+func _apply_well_hydration() -> void:
+	for well_pos in GameState.placed_wells:
+		var reserve: float = float(GameState.well_reserves.get(well_pos, 0.0))
+		if reserve <= 0.0:
+			continue
+		for y in range(maxi(0, well_pos.y - 3), mini(grid_height, well_pos.y + 4)):
+			for x in range(maxi(0, well_pos.x - 3), mini(grid_width, well_pos.x + 4)):
+				var pos: Vector2i = Vector2i(x, y)
+				var distance: float = Vector2(pos - well_pos).length()
+				if distance > GameState.WELL_INFLUENCE_RADIUS or reserve <= 0.0:
+					continue
+				var cell: PeatCellData = cells[pos]
+				var strength: float = 1.0 - distance / (GameState.WELL_INFLUENCE_RADIUS + 0.01)
+				var water_cost: float = 0.35 * strength
+				water_cost = minf(water_cost, reserve)
+				reserve -= water_cost
+				cell.soil_moisture = minf(0.90, cell.soil_moisture + water_cost * 0.006)
+				cell.water_table = minf(-10.0, cell.water_table + water_cost * 0.30)
+				cell.recalculate_pfvi()
+				EventBus.cell_state_updated.emit(pos, cell)
+		GameState.well_reserves[well_pos] = reserve
+
+func _check_station_status() -> void:
+	if not GameState.station_safe or not cells.has(station_cell):
+		return
+	var protected: PeatCellData = cells[station_cell]
+	if protected.is_active_hazard() or protected.is_burnt:
+		GameState.station_safe = false
+		EventBus.educational_toast.emit("DARURAT! Pos pengamatan terbakar. Perlindungan misi gagal!", true)
+	elif GameState.active_fire_cells > 0 and tick_count - last_warning_tick >= 10:
+		for pos in cells.keys():
+			var cell: PeatCellData = cells[pos]
+			if cell.is_active_hazard() and Vector2(pos - station_cell).length() <= 3.5:
+				last_warning_tick = tick_count
+				EventBus.educational_toast.emit("PERINGATAN! Api mendekati pos pengamatan utara!", true)
+				break
 
 func _get_neighbors(center: Vector2i) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
@@ -316,12 +369,28 @@ func _update_stats() -> void:
 func _check_mission_outcome() -> void:
 	if not outbreak_started or GameState.current_phase != ToolEnums.GamePhase.ACTIVE_FPS:
 		return
-	if GameState.active_fire_cells == 0:
+	if not GameState.station_safe:
 		cancel_injection()
+		GameState.mission_notes = "Pos pengamatan tidak berhasil dilindungi."
+		GameState.set_game_phase(ToolEnums.GamePhase.DEFEAT)
+	elif GameState.active_fire_cells == 0:
+		cancel_injection()
+		_calculate_score()
 		GameState.set_game_phase(ToolEnums.GamePhase.VICTORY)
 	elif (GameState.burned_cells + GameState.active_fire_cells) > int(float(GameState.total_cells) * 0.50):
 		cancel_injection()
+		GameState.mission_notes = "Kerusakan lahan melampaui 50%."
 		GameState.set_game_phase(ToolEnums.GamePhase.DEFEAT)
+
+func _calculate_score() -> void:
+	var safe_ratio: float = float(GameState.safe_cells) / maxf(1.0, float(GameState.total_cells))
+	var carbon_ratio: float = GameState.carbon_saved_tons / maxf(1.0, GameState.initial_carbon_tons)
+	var water_ratio: float = 1.0 - GameState.water_used_total / maxf(1.0, GameState.max_water_capacity * 2.0)
+	var time_ratio: float = 1.0 - GameState.mission_elapsed_sec / 900.0
+	var points: float = 45.0 * safe_ratio + 25.0 * carbon_ratio + 15.0 * clampf(water_ratio, 0.0, 1.0) + 15.0 * clampf(time_ratio, 0.0, 1.0)
+	GameState.mission_score = clampi(roundi(points), 0, 100)
+	GameState.mission_medal = "EMAS" if GameState.mission_score >= 85 else ("PERAK" if GameState.mission_score >= 70 else "PERUNGGU")
+	GameState.mission_notes = "Pos pengamatan aman; seluruh hotspot padam."
 
 func get_cell_data(pos: Vector2i) -> PeatCellData:
 	return cells.get(pos, null)
