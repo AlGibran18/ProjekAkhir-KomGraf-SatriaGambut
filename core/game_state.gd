@@ -74,6 +74,8 @@ var mission_score: int = 0
 var mission_medal: String = "-"
 var initial_carbon_tons: float = 0.0
 var mission_notes: String = ""
+var last_new_record: bool = false
+const RECORDS_PATH: String = "user://satria_gambut_records.cfg"
 var max_wells_allowed: int = 2
 
 var mouse_sensitivity: float = 0.0022
@@ -118,6 +120,7 @@ func reset_mission_state() -> void:
 	mission_medal = "-"
 	initial_carbon_tons = 0.0
 	mission_notes = ""
+	last_new_record = false
 	burned_cells = 0
 	safe_cells = total_cells
 	active_fire_cells = 0
@@ -171,6 +174,42 @@ func refill_from_well(pos: Vector2i, amount: float) -> float:
 	well_reserves[pos] = float(well_reserves[pos]) - transferred
 	refill_water(transferred)
 	return transferred
+
+# Rekor lokal tersimpan antar sesi; tidak memerlukan koneksi atau akun.
+func get_best_record(level_idx: int) -> Dictionary:
+	var config: ConfigFile = ConfigFile.new()
+	if config.load(RECORDS_PATH) != OK:
+		return {}
+	var section: String = "level_%d" % level_idx
+	if not config.has_section(section):
+		return {}
+	return {
+		"score": int(config.get_value(section, "score", 0)),
+		"time": float(config.get_value(section, "time", 0.0)),
+		"medal": String(config.get_value(section, "medal", "-"))
+	}
+
+func save_best_record() -> bool:
+	last_new_record = false
+	var old: Dictionary = get_best_record(current_level_index)
+	# Tingkatkan rekor hanya jika skor lebih tinggi, atau skor sama dan waktu lebih singkat.
+	if not old.is_empty():
+		var old_score: int = int(old.get("score", 0))
+		var old_time: float = float(old.get("time", INF))
+		if mission_score < old_score or (mission_score == old_score and mission_elapsed_sec >= old_time):
+			return false
+	var config: ConfigFile = ConfigFile.new()
+	config.load(RECORDS_PATH)
+	var section: String = "level_%d" % current_level_index
+	config.set_value(section, "score", mission_score)
+	config.set_value(section, "time", mission_elapsed_sec)
+	config.set_value(section, "medal", mission_medal)
+	var result: Error = config.save(RECORDS_PATH)
+	if result != OK:
+		push_warning("Gagal menyimpan rekor lokal: %d" % result)
+		return false
+	last_new_record = true
+	return true
 
 func set_graphics_quality(quality: GraphicsQuality) -> void:
 	current_graphics_quality = quality
