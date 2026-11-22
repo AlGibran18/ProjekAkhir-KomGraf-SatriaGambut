@@ -65,6 +65,15 @@ var spread_multiplier: float = 1.0
 var initial_fires_count: int = 2
 
 var placed_wells: Array[Vector2i] = []
+# Cadangan air masing-masing sumur, dalam liter.
+var well_reserves: Dictionary = {}
+const WELL_MAX_RESERVE: float = 1250.0
+const WELL_INFLUENCE_RADIUS: float = 2.8
+var station_safe: bool = true
+var mission_score: int = 0
+var mission_medal: String = "-"
+var initial_carbon_tons: float = 0.0
+var mission_notes: String = ""
 var max_wells_allowed: int = 2
 
 var mouse_sensitivity: float = 0.0022
@@ -103,6 +112,12 @@ func reset_mission_state() -> void:
 	current_tool = ToolEnums.ToolType.SEMPROT_PERMUKAAN
 	is_thermal_active = false
 	placed_wells.clear()
+	well_reserves.clear()
+	station_safe = true
+	mission_score = 0
+	mission_medal = "-"
+	initial_carbon_tons = 0.0
+	mission_notes = ""
 	burned_cells = 0
 	safe_cells = total_cells
 	active_fire_cells = 0
@@ -144,6 +159,18 @@ func refill_water(amount: float) -> bool:
 	current_water = minf(max_water_capacity, current_water + amount)
 	EventBus.water_changed.emit(current_water, max_water_capacity)
 	return true
+
+# Air cadangan di sumur benar-benar berkurang ketika pemain mengisi tangki.
+func refill_from_well(pos: Vector2i, amount: float) -> float:
+	if not well_reserves.has(pos):
+		return 0.0
+	var transferred: float = minf(amount, maxf(0.0, max_water_capacity - current_water))
+	transferred = minf(transferred, float(well_reserves[pos]))
+	if transferred <= 0.0:
+		return 0.0
+	well_reserves[pos] = float(well_reserves[pos]) - transferred
+	refill_water(transferred)
+	return transferred
 
 func set_graphics_quality(quality: GraphicsQuality) -> void:
 	current_graphics_quality = quality
