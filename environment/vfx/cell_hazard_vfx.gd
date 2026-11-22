@@ -23,9 +23,11 @@ func _ready() -> void:
 	EventBus.graphics_quality_changed.connect(_on_graphics_quality_changed)
 	# Scene particle materials can be shared among multiple hazard instances.
 	# Duplicate the mutable resources so each hotspot has independent wind.
-	for particles in [flame_particles, thick_smoke_particles, subsurface_smoke_particles]:
+	for particles: GPUParticles3D in [flame_particles, thick_smoke_particles, subsurface_smoke_particles]:
 		if particles.process_material != null:
 			particles.process_material = particles.process_material.duplicate(true)
+	if ember_glow_mesh.material_override != null:
+		ember_glow_mesh.material_override = ember_glow_mesh.material_override.duplicate(true)
 	_create_flying_embers()
 	light_phase = randf_range(0.0, TAU)
 	_apply_quality_ratio()
