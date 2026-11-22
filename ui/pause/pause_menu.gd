@@ -10,6 +10,7 @@ extends Control
 @onready var btn_menu: Button = $CenterPanel/VBox/BtnMenu
 
 var resume_callback: Callable
+var stop_confirmation: ConfirmationDialog
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -21,7 +22,8 @@ func _ready() -> void:
 	vol_slider.value_changed.connect(_on_vol_changed)
 	btn_resume.pressed.connect(_on_resume_pressed)
 	btn_restart.pressed.connect(_on_restart_pressed)
-	btn_menu.pressed.connect(_on_menu_pressed)
+	btn_menu.pressed.connect(_on_stop_requested)
+	_create_stop_confirmation()
 	EventBus.game_phase_changed.connect(_on_phase_changed)
 
 func set_resume_callback(cb: Callable) -> void:
@@ -74,7 +76,28 @@ func _on_restart_pressed() -> void:
 	GameState.load_level_config(GameState.current_level_index)
 	get_tree().reload_current_scene()
 
-func _on_menu_pressed() -> void:
+func _create_stop_confirmation() -> void:
+	stop_confirmation = ConfirmationDialog.new()
+	stop_confirmation.title = "Akhiri Operasi?"
+	stop_confirmation.dialog_text = "Operasi ini akan dihentikan tanpa kemenangan.\n\nHasil sementara, jumlah hotspot, air yang terpakai, dan grafik akan ditampilkan di layar evaluasi.\n\nAnda masih bisa mengulang level atau kembali ke menu setelah melihat evaluasi."
+	stop_confirmation.ok_button_text = "AKHIRI & LIHAT HASIL"
+	stop_confirmation.cancel_button_text = "LANJUTKAN MISI"
+	add_child(stop_confirmation)
+	stop_confirmation.confirmed.connect(_on_stop_confirmed)
+
+func _on_stop_requested() -> void:
 	AudioManager.play_sfx("click")
+	stop_confirmation.popup_centered()
+
+func _on_stop_confirmed() -> void:
+	if GameState.current_phase != ToolEnums.GamePhase.PAUSED:
+		return
+	AudioManager.play_sfx("click")
+	# Resume the scene tree before changing the phase: evaluation input and
+	# telemetry must run even though the stop originated from Pause.
 	get_tree().paused = false
-	get_tree().change_scene_to_file("res://ui/main_menu/main_menu.tscn")
+	GameState.mission_score = 0
+	GameState.mission_medal = "-"
+	GameState.last_new_record = false
+	GameState.mission_notes = "Operasi dihentikan sukarela. Statistik merupakan hasil sementara; hotspot masih aktif."
+	GameState.set_game_phase(ToolEnums.GamePhase.ABORTED)
