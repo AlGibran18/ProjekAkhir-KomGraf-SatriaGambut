@@ -17,12 +17,17 @@ var forest_audio: ForestAudioAmbience
 var lightning_system: StormLightning3D
 var cinematic_capture: CinematicCapture
 var mission_telemetry: MissionTelemetry
+var navigation_world_arrow: NavigationWorldArrow3D
 
 func _ready() -> void:
 	AudioManager.play_game_music()
 	grid_simulator.initialize_level(GameState.current_level_index)
 	simulation_view_3d.setup_view(grid_simulator)
 	player.set_grid_simulator(grid_simulator)
+	navigation_world_arrow = NavigationWorldArrow3D.new()
+	navigation_world_arrow.name = "NavigationWorldArrow"
+	navigation_world_arrow.initialize(player)
+	player.add_child(navigation_world_arrow)
 
 	var spawn_x: float = float(grid_simulator.grid_width / 2) * GameState.CELL_SIZE
 	var spawn_z: float = 1.0 * GameState.CELL_SIZE
