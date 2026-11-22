@@ -202,6 +202,16 @@ func _on_minimap_draw() -> void:
 			col = PFVICalculator.get_risk_color(cell.risk_category) * 0.65
 		minimap_canvas.draw_rect(rect, col, true)
 
+	# Penanda lokasi pos yang wajib dilindungi; lingkaran berkedip saat terancam.
+	var station_pos: Vector2 = Vector2(8.5 * cw, 1.5 * ch)
+	minimap_canvas.draw_circle(station_pos, 5.0, Color(0.28, 1.0, 0.90) if GameState.station_safe else Color.RED)
+	minimap_canvas.draw_arc(station_pos, 7.0, 0.0, TAU, 24, Color.WHITE, 1.5)
+	# Penanda hotspot yang tampak di permukaan; bara tersembunyi hanya tampil saat Thermal.
+	for pos in grid_simulator.cells.keys():
+		var info: PeatCellData = grid_simulator.cells[pos]
+		if info.is_burning() or (GameState.is_thermal_active and info.has_ember()):
+			var marker: Vector2 = Vector2((float(pos.x) + 0.5) * cw, (float(pos.y) + 0.5) * ch)
+			minimap_canvas.draw_arc(marker, minf(cw, ch) * 0.45, 0.0, TAU, 12, Color(1.0, 0.85, 0.20), 1.2)
 	if player_node != null:
 		var px: float = (player_node.global_position.x / GameState.CELL_SIZE + 0.5) * cw
 		var pz: float = (player_node.global_position.z / GameState.CELL_SIZE + 0.5) * ch
