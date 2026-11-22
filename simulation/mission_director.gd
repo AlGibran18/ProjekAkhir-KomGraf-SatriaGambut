@@ -4,7 +4,9 @@ extends Node
 
 var simulator: GridSimulator
 var tracked_player: Node3D
-var navigation_mode: int = 0
+var navigation_mode: int = -1
+var last_nav_cell: Vector2i = Vector2i(-9, -9)
+var last_nav_category: String = ""
 var navigation_label: Label
 var weather_clock: float = 0.0
 var ui_clock: float = 0.0
@@ -36,7 +38,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if GameState.current_phase != ToolEnums.GamePhase.ACTIVE_FPS:
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_H:
-		navigation_mode = (navigation_mode + 1) % 3
+		navigation_mode = (navigation_mode + 2) % 4 - 1
 		_refresh_ui()
 		get_viewport().set_input_as_handled()
 
@@ -108,6 +110,8 @@ func _create_mission_hud() -> void:
 func _on_phase_changed(phase: ToolEnums.GamePhase) -> void:
 	if mission_layer != null:
 		mission_layer.visible = phase == ToolEnums.GamePhase.ACTIVE_FPS
+	if phase != ToolEnums.GamePhase.ACTIVE_FPS:
+		_publish_nav(Vector2i(-1, -1), "")
 	if phase == ToolEnums.GamePhase.ACTIVE_FPS:
 		_refresh_ui()
 		if GameState.current_level_index == 0 and tutorial_step == 0:
@@ -201,8 +205,18 @@ func _change_weather() -> void:
 
 # Navigasi opsional (H): hotspot terlihat, sumur berisi, atau pos.
 # Bara di bawah tanah tidak dibocorkan saat thermal dimatikan.
+func _publish_nav(cell: Vector2i, category: String) -> void:
+	if cell != last_nav_cell or category != last_nav_category:
+		last_nav_cell = cell
+		last_nav_category = category
+		EventBus.navigator_target_changed.emit(cell, category)
+
 func _update_navigator() -> void:
 	if navigation_label == null or tracked_player == null or simulator == null:
+		return
+	if navigation_mode < 0:
+		navigation_label.text = "[H] PANDUAN: Tekan H untuk pilih HOTSPOT / SUMUR / POS"
+		_publish_nav(Vector2i(-1, -1), "")
 		return
 	var target_pos: Vector2i = Vector2i(-1, -1)
 	var title: String = ""
@@ -235,7 +249,9 @@ func _update_navigator() -> void:
 	if target_pos == Vector2i(-1, -1):
 		var hint: String = " (aktifkan Thermal [Tab])" if navigation_mode == 0 and GameState.active_fire_cells > 0 else ""
 		navigation_label.text = "[H] %s: Tidak ditemukan%s" % [title, hint]
+		_publish_nav(Vector2i(-1, -1), title)
 		return
+	_publish_nav(target_pos, title)
 	var target_world: Vector2 = Vector2(float(target_pos.x), float(target_pos.y)) * GameState.CELL_SIZE
 	var direction: Vector2 = target_world - player_pos
 	var distance: float = direction.length()
