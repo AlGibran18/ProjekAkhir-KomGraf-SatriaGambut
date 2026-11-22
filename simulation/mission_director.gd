@@ -3,6 +3,9 @@ class_name MissionDirector
 extends Node
 
 var simulator: GridSimulator
+var tracked_player: Node3D
+var navigation_mode: int = 0
+var navigation_label: Label
 var weather_clock: float = 0.0
 var ui_clock: float = 0.0
 var tutorial_step: int = 0
@@ -16,8 +19,9 @@ var progress_bar: ProgressBar
 var weather_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var event_number: int = 0
 
-func initialize(sim: GridSimulator) -> void:
+func initialize(sim: GridSimulator, player: Node3D) -> void:
 	simulator = sim
+	tracked_player = player
 
 func _ready() -> void:
 	weather_rng.randomize()
@@ -27,6 +31,14 @@ func _ready() -> void:
 	EventBus.thermal_mode_toggled.connect(_on_thermal)
 	EventBus.mission_stats_updated.connect(_on_stats)
 	_on_phase_changed(GameState.current_phase)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if GameState.current_phase != ToolEnums.GamePhase.ACTIVE_FPS:
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_H:
+		navigation_mode = (navigation_mode + 1) % 3
+		_refresh_ui()
+		get_viewport().set_input_as_handled()
 
 func _process(delta: float) -> void:
 	if GameState.current_phase != ToolEnums.GamePhase.ACTIVE_FPS:
@@ -73,6 +85,10 @@ func _create_mission_hud() -> void:
 	objective_label.text = "OBJEKTIF: Padamkan hotspot dan lindungi pos"
 	objective_label.add_theme_font_size_override("font_size", 13)
 	stack.add_child(objective_label)
+	navigation_label = Label.new()
+	navigation_label.add_theme_font_size_override("font_size", 13)
+	navigation_label.add_theme_color_override("font_color", Color(0.95, 0.81, 0.40))
+	stack.add_child(navigation_label)
 	progress_bar = ProgressBar.new()
 	progress_bar.custom_minimum_size.y = 10.0
 	progress_bar.show_percentage = false
@@ -137,6 +153,7 @@ func _refresh_ui() -> void:
 	var prog: float = clampf(100.0 * float(cleared) / float(base_hotspots), 0.0, 100.0)
 	progress_bar.value = prog
 	objective_label.text = "HOTSPOT: %d aktif  |  Pos: %s" % [active, "AMAN" if GameState.station_safe else "HANCUR"]
+	_update_navigator()
 	weather_label.text = "CUACA: %.1f C  | Angin %.0f km/j  | Hujan %.1f mm" % [GameState.ambient_temperature, GameState.wind_speed_kmh, GameState.global_rainfall_rate]
 	var reserve_total: float = 0.0
 	for amount in GameState.well_reserves.values():
@@ -181,3 +198,55 @@ func _change_weather() -> void:
 		cell.recalculate_pfvi()
 		EventBus.cell_state_updated.emit(pos, cell)
 	_refresh_ui()
+
+# Navigasi opsional (H): hotspot terlihat, sumur berisi, atau pos.
+# Bara di bawah tanah tidak dibocorkan saat thermal dimatikan.
+func _update_navigator() -> void:
+	if navigation_label == null or tracked_player == null or simulator == null:
+		return
+	var target_pos: Vector2i = Vector2i(-1, -1)
+	var title: String = ""
+	var best_distance: float = INF
+	var player_pos: Vector2 = Vector2(tracked_player.global_position.x, tracked_player.global_position.z)
+	if navigation_mode == 2:
+		target_pos = simulator.station_cell
+		title = "POS PENGAMATAN"
+	elif navigation_mode == 1:
+		title = "SUMUR AIR"
+		for grid_pos in GameState.placed_wells:
+			if float(GameState.well_reserves.get(grid_pos, 0.0)) <= 0.0:
+				continue
+			var world: Vector2 = Vector2(float(grid_pos.x), float(grid_pos.y)) * GameState.CELL_SIZE
+			var dist: float = player_pos.distance_to(world)
+			if dist < best_distance:
+				best_distance = dist
+				target_pos = grid_pos
+	else:
+		title = "HOTSPOT"
+		for grid_pos in simulator.cells.keys():
+			var cell: PeatCellData = simulator.cells[grid_pos]
+			if not cell.is_burning() and not (GameState.is_thermal_active and cell.has_ember()):
+				continue
+			var world: Vector2 = Vector2(float(grid_pos.x), float(grid_pos.y)) * GameState.CELL_SIZE
+			var dist: float = player_pos.distance_to(world)
+			if dist < best_distance:
+				best_distance = dist
+				target_pos = grid_pos
+	if target_pos == Vector2i(-1, -1):
+		var hint: String = " (aktifkan Thermal [Tab])" if navigation_mode == 0 and GameState.active_fire_cells > 0 else ""
+		navigation_label.text = "[H] %s: Tidak ditemukan%s" % [title, hint]
+		return
+	var target_world: Vector2 = Vector2(float(target_pos.x), float(target_pos.y)) * GameState.CELL_SIZE
+	var direction: Vector2 = target_world - player_pos
+	var distance: float = direction.length()
+	if distance < 1.5:
+		navigation_label.text = "[H] %s: DI LOKASI (%.0f m)" % [title, distance]
+		return
+	direction = direction.normalized()
+	var facing: Vector3 = -tracked_player.global_transform.basis.z
+	var forward: Vector2 = Vector2(facing.x, facing.z).normalized()
+	var right: Vector2 = Vector2(-forward.y, forward.x)
+	var angle: float = atan2(direction.dot(right), direction.dot(forward))
+	var sector: int = posmod(roundi(angle / (PI / 4.0)), 8)
+	var pointers: Array[String] = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"]
+	navigation_label.text = "[H] %s %s  %.0f m" % [title, pointers[sector], distance]
