@@ -13,6 +13,7 @@ extends Node3D
 var has_transitioned_from_planning: bool = false
 var mission_director: MissionDirector
 var weather_ambience: WeatherAmbience3D
+var forest_audio: ForestAudioAmbience
 
 func _ready() -> void:
 	grid_simulator.initialize_level(GameState.current_level_index)
@@ -26,6 +27,10 @@ func _ready() -> void:
 	weather_ambience = WeatherAmbience3D.new()
 	weather_ambience.initialize(player, simulation_view_3d)
 	simulation_view_3d.add_child(weather_ambience)
+
+	forest_audio = ForestAudioAmbience.new()
+	forest_audio.initialize(player, grid_simulator)
+	add_child(forest_audio)
 
 	hud.setup_hud(grid_simulator, player)
 	planning_overlay.setup_planning(grid_simulator)
