@@ -17,9 +17,15 @@ var ember_sparks: GPUParticles3D
 var burning_now: bool = false
 var light_phase: float = 0.0
 var burn_wind: Vector2 = Vector2.RIGHT
+var weather_refresh_elapsed: float = 0.0
 
 func _ready() -> void:
 	EventBus.graphics_quality_changed.connect(_on_graphics_quality_changed)
+	# Scene particle materials can be shared among multiple hazard instances.
+	# Duplicate the mutable resources so each hotspot has independent wind.
+	for particles in [flame_particles, thick_smoke_particles, subsurface_smoke_particles]:
+		if particles.process_material != null:
+			particles.process_material = particles.process_material.duplicate(true)
 	_create_flying_embers()
 	light_phase = randf_range(0.0, TAU)
 	_apply_quality_ratio()
@@ -58,6 +64,13 @@ func _create_flying_embers() -> void:
 	add_child(ember_sparks)
 
 func _process(delta: float) -> void:
+	# Weather fronts can change the wind without a local ignition event.
+	# Refresh the particle drift periodically, not on every frame.
+	if burning_now:
+		weather_refresh_elapsed += delta
+		if weather_refresh_elapsed >= 0.65:
+			weather_refresh_elapsed = 0.0
+			_update_particle_wind(GameState.wind_direction)
 	# Flicker costs no additional lights and only runs while the cell is burning.
 	if burning_now and fire_light.visible:
 		light_phase += delta * 11.0
@@ -83,31 +96,31 @@ func update_state(cell: PeatCellData, thermal_active: bool, wind_dir: Vector2, c
 	_apply_quality_ratio()
 	fire_light.light_energy = lerpf(0.8, 2.7, last_intensity)
 	fire_light.omni_range = lerpf(3.8, 7.0, last_intensity)
-	var wind_speed: float = GameState.wind_speed_kmh / 12.0
-	# Visual tilt follows wind, independently of cellular spread probabilities.
-	var spark_mat: ParticleProcessMaterial = ember_sparks.process_material as ParticleProcessMaterial
-	if spark_mat != null:
-		spark_mat.gravity = Vector3(wind_dir.x * wind_speed * 2.0, 0.7, wind_dir.y * wind_speed * 2.0)
-	var flame_mat: ParticleProcessMaterial = flame_particles.process_material as ParticleProcessMaterial
-	if flame_mat != null:
-		flame_mat.gravity = Vector3(wind_dir.x * wind_speed * 0.85, 1.2, wind_dir.y * wind_speed * 0.85)
+	_update_particle_wind(wind_dir)
 	ember_sparks.emitting = burning and GameState.current_graphics_quality != GameState.GraphicsQuality.LOW
 
 	flame_particles.emitting = burning
 	thick_smoke_particles.emitting = burning
 	subsurface_smoke_particles.emitting = (not burning) and has_ember
 
-	var smoke_mat: ParticleProcessMaterial = thick_smoke_particles.process_material as ParticleProcessMaterial
-	if smoke_mat != null:
-		smoke_mat.gravity = Vector3(wind_dir.x * 2.4 * wind_speed, 2.2, wind_dir.y * 2.4 * wind_speed)
-
-	var sub_mat: ParticleProcessMaterial = subsurface_smoke_particles.process_material as ParticleProcessMaterial
-	if sub_mat != null:
-		sub_mat.gravity = Vector3(wind_dir.x * 1.1 * wind_speed, 1.4, wind_dir.y * 1.1 * wind_speed)
-
 	is_thermal_ember = thermal_active and has_ember
 	ember_glow_mesh.visible = has_ember and (thermal_active or not burning)
 	fire_light.visible = burning and allow_dynamic_light and (GameState.current_graphics_quality != GameState.GraphicsQuality.LOW)
+
+func _update_particle_wind(wind_dir: Vector2) -> void:
+	var wind_speed: float = GameState.wind_speed_kmh / 12.0
+	var spark_mat: ParticleProcessMaterial = ember_sparks.process_material as ParticleProcessMaterial
+	if spark_mat != null:
+		spark_mat.gravity = Vector3(wind_dir.x * wind_speed * 2.0, 0.7, wind_dir.y * wind_speed * 2.0)
+	var flame_mat: ParticleProcessMaterial = flame_particles.process_material as ParticleProcessMaterial
+	if flame_mat != null:
+		flame_mat.gravity = Vector3(wind_dir.x * wind_speed * 0.85, 1.2, wind_dir.y * wind_speed * 0.85)
+	var smoke_mat: ParticleProcessMaterial = thick_smoke_particles.process_material as ParticleProcessMaterial
+	if smoke_mat != null:
+		smoke_mat.gravity = Vector3(wind_dir.x * 2.4 * wind_speed, 2.2, wind_dir.y * 2.4 * wind_speed)
+	var sub_mat: ParticleProcessMaterial = subsurface_smoke_particles.process_material as ParticleProcessMaterial
+	if sub_mat != null:
+		sub_mat.gravity = Vector3(wind_dir.x * 1.1 * wind_speed, 1.4, wind_dir.y * 1.1 * wind_speed)
 
 func trigger_steam_burst() -> void:
 	steam_burst_particles.restart()
