@@ -27,6 +27,9 @@ func _ready() -> void:
 	_populate_levels()
 	_create_display_setting()
 	_populate_settings()
+	# Defer display restoration until buttons, modals and mouse handling exist.
+	GameState.call_deferred("_apply_saved_display")
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 	level_option.item_selected.connect(_on_level_selected)
 	btn_start.pressed.connect(_on_start_pressed)
@@ -42,6 +45,10 @@ func _ready() -> void:
 	quality_option.item_selected.connect(_on_quality_selected)
 	sens_slider.value_changed.connect(_on_sens_changed)
 	vol_slider.value_changed.connect(_on_vol_changed)
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_WINDOW_FOCUS_IN:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 func _populate_levels() -> void:
 	level_option.clear()
@@ -102,7 +109,7 @@ func _create_display_setting() -> void:
 	display_option = OptionButton.new()
 	display_option.name = "DisplayModeOption"
 	display_option.add_item("Windowed (Jendela)")
-	display_option.add_item("Fullscreen (Layar Penuh)")
+	display_option.add_item("Fullscreen Borderless (Layar Penuh)")
 	settings_box.add_child(display_option)
 	settings_box.move_child(display_option, insertion_index + 1)
 	display_option.item_selected.connect(_on_display_mode_selected)
