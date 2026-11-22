@@ -70,6 +70,14 @@ func _update_level_desc(idx: int) -> void:
 		float(cfg["wind_speed"]),
 		float(cfg["water_capacity"])
 	]
+	var record: Dictionary = GameState.get_best_record(idx)
+	if record.is_empty():
+		level_desc_label.text += "\nRekor: Belum ada"
+	else:
+		var elapsed: int = int(float(record.get("time", 0.0)))
+		level_desc_label.text += "\nRekor: %d/100 (%s) • %02d:%02d" % [
+			int(record.get("score", 0)), String(record.get("medal", "-")), elapsed / 60, elapsed % 60
+		]
 
 func _on_start_pressed() -> void:
 	AudioManager.play_sfx("click")
