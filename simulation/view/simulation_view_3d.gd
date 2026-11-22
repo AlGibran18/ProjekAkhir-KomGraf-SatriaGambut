@@ -507,6 +507,10 @@ func _update_cell_visual(pos: Vector2i, cell: PeatCellData) -> void:
 			var dry_peat: Color = Color(0.32, 0.22, 0.13)
 			var moist_peat: Color = Color(0.14, 0.16, 0.09)
 			target_color = dry_peat.lerp(moist_peat, moisture_ratio)
+			# Wet peat appears darker with a subtle cool sheen after rain or spraying.
+			# Still one MultiMesh draw call; does not change physics or PFVI.
+			var wetness: float = smoothstep(0.48, 0.90, cell.soil_moisture)
+			target_color = target_color.lerp(Color(0.075, 0.105, 0.115, 1.0), wetness * 0.65)
 
 	target_cell_colors[pos] = target_color
 	animating_cells[pos] = true
