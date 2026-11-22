@@ -275,11 +275,11 @@ theme_override_constants/separation = 4
 [node name="Title" type="Label" parent="RootMargin/MainContainer/TopRow/MiniMapPanel/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
-text = "PETA TAKTIS (Putih=Anda, Biru=Sumur)"
+text = "RADAR TAKTIS  [M] PETA BESAR"
 horizontal_alignment = 1
 
 [node name="MiniMapCanvas" type="Control" parent="RootMargin/MainContainer/TopRow/MiniMapPanel/VBox"]
-custom_minimum_size = Vector2(148, 148)
+custom_minimum_size = Vector2(178, 178)
 layout_mode = 2
 
 [node name="Spacer" type="Control" parent="RootMargin/MainContainer"]
@@ -295,7 +295,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 [node name="HintLabel" type="Label" parent="RootMargin/MainContainer/HintPanel"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
-text = " [WASD]: Gerak | [Shift]: Lari | [Spasi]: Lompat | [Klik Kiri / Tahan]: Pakai Alat | [Tab]: Thermal | [ESC]: Pause "
+text = " WASD Gerak | Shift Lari | V Kamera FPS/TPP | M Peta | Tab Thermal | F10 Sinematik | ESC Pause "
 
 [node name="BottomRow" type="HBoxContainer" parent="RootMargin/MainContainer"]
 layout_mode = 2
