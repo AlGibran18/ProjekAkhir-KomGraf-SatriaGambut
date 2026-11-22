@@ -24,13 +24,14 @@ func _ready() -> void:
 	EventBus.game_phase_changed.connect(_on_phase_changed)
 
 func _on_phase_changed(new_phase: ToolEnums.GamePhase) -> void:
-	var is_end: bool = (new_phase == ToolEnums.GamePhase.VICTORY or new_phase == ToolEnums.GamePhase.DEFEAT)
+	var is_end: bool = (new_phase == ToolEnums.GamePhase.VICTORY or new_phase == ToolEnums.GamePhase.DEFEAT or new_phase == ToolEnums.GamePhase.ABORTED)
 	visible = is_end
 	if not is_end:
 		return
 
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	var is_victory: bool = (new_phase == ToolEnums.GamePhase.VICTORY)
+	var is_aborted: bool = (new_phase == ToolEnums.GamePhase.ABORTED)
 	var safe_pct: float = (float(GameState.safe_cells) / maxf(1.0, float(GameState.total_cells))) * 100.0
 	var mins: int = int(GameState.mission_elapsed_sec) / 60
 	var secs: int = int(GameState.mission_elapsed_sec) % 60
@@ -41,6 +42,15 @@ func _on_phase_changed(new_phase: ToolEnums.GamePhase) -> void:
 		banner_label.text = "100% Hotspot Padam — Cadangan Karbon Selamat"
 		checklist_label.text = "[✓] Api Padam Tuntas   |   [✓] Hutan Gambut Pulih   |   [✓] Cadangan Karbon Terjaga"
 		checklist_label.modulate = Color(0.75, 1.0, 0.80)
+	elif is_aborted:
+		status_title.text = "OPERASI DIHENTIKAN"
+		status_title.modulate = Color(1.0, 0.83, 0.43)
+		banner_label.text = "Laporan Sementara — Level %d" % (GameState.current_level_index + 1)
+		checklist_label.text = "Hotspot tersisa: %d  |  Bara tersembunyi: %d  |  Pos: %s" % [
+			GameState.active_fire_cells, GameState.subsurface_only_cells,
+			"AMAN" if GameState.station_safe else "TERDAMPAK"
+		]
+		checklist_label.modulate = Color(1.0, 0.88, 0.64)
 	else:
 		status_title.text = "MISI GAGAL"
 		status_title.modulate = Color(1.0, 0.42, 0.38)
@@ -50,7 +60,9 @@ func _on_phase_changed(new_phase: ToolEnums.GamePhase) -> void:
 
 	var record_message: String = "REKOR BARU!\n" if is_victory and GameState.last_new_record else ""
 	var medal_section: String = "SKOR MISI: %d/100  |  MEDALI: %s\n%s%s\n\n" % [GameState.mission_score, GameState.mission_medal, record_message, GameState.mission_notes]
-	metrics_label.text = medal_section + "LAPORAN EVALUASI ILMIAH:\n• Durasi Operasi: %02d:%02d\n• Lahan Gambut Selamat: %.1f%% (%d dari %d petak)\n• Cadangan Karbon Terselamatkan: %.1f ton CO₂e\n• Emisi Karbon Terlepas: %.1f ton CO₂e\n• Total Air Digunakan: %.0f Liter (%d Sumur Air terpasang)\n\nCatatan Edukasi: Lahan gambut menyimpan karbon 3x lebih besar dari hutan biasa. Menyuntikkan air ke bara bawah permukaan mencegah re-ignition!" % [
+	if is_aborted:
+		medal_section = "STATUS: DIHENTIKAN SUKARELA  |  TIDAK ADA MEDALI\n%s\n\n" % GameState.mission_notes
+	metrics_label.text = medal_section + ("RINGKASAN HASIL SEMENTARA:\n" if is_aborted else "LAPORAN EVALUASI ILMIAH:\n") + "• Durasi Operasi: %02d:%02d\n• Lahan Gambut Selamat: %.1f%% (%d dari %d petak)\n• Cadangan Karbon Terselamatkan: %.1f ton CO₂e\n• Emisi Karbon Terlepas: %.1f ton CO₂e\n• Total Air Digunakan: %.0f Liter (%d Sumur Air terpasang)\n\nCatatan Edukasi: Lahan gambut menyimpan karbon 3x lebih besar dari hutan biasa. Menyuntikkan air ke bara bawah permukaan mencegah re-ignition!" % [
 		mins, secs, safe_pct, GameState.safe_cells, GameState.total_cells,
 		GameState.carbon_saved_tons, GameState.carbon_released_tons,
 		GameState.water_used_total, GameState.placed_wells.size()
