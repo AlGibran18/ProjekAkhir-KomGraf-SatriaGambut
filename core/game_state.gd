@@ -223,13 +223,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func set_fullscreen(enabled: bool) -> void:
 	fullscreen_enabled = enabled
-	var window: Window = get_window()
-	if window != null:
-		window.mode = Window.MODE_FULLSCREEN if enabled else Window.MODE_WINDOWED
-		if not enabled:
-			var display_size: Vector2i = DisplayServer.screen_get_size()
-			window.size = Vector2i(mini(1280, display_size.x), mini(720, display_size.y))
-			window.position = (display_size - window.size) / 2
+	# Switch only after the triggering UI event completes.
+	call_deferred("_apply_saved_display")
 	var config: ConfigFile = ConfigFile.new()
 	config.set_value("display", "fullscreen", enabled)
 	var save_result: Error = config.save(DISPLAY_SETTINGS_PATH)
@@ -242,13 +237,28 @@ func _load_display_settings() -> void:
 		fullscreen_enabled = bool(config.get_value("display", "fullscreen", false))
 	else:
 		fullscreen_enabled = false
-	# Defer to the next idle frame so the root window has finished initialization.
-	call_deferred("_apply_saved_display")
+	# The main menu applies this after its controls have entered the scene tree.
 
 func _apply_saved_display() -> void:
 	var window: Window = get_window()
-	if window != null:
-		window.mode = Window.MODE_FULLSCREEN if fullscreen_enabled else Window.MODE_WINDOWED
+	if window == null:
+		return
+	# Borderless fullscreen retains regular Windows input routing and avoids
+	# switching the debug build into an exclusive/window-mode transition.
+	window.mode = Window.MODE_WINDOWED
+	if fullscreen_enabled:
+		window.borderless = true
+		window.position = DisplayServer.screen_get_position()
+		window.size = DisplayServer.screen_get_size()
+	else:
+		window.borderless = false
+		var usable: Rect2i = DisplayServer.screen_get_usable_rect()
+		window.size = Vector2i(mini(1280, usable.size.x), mini(720, usable.size.y))
+		window.position = usable.position + (usable.size - window.size) / 2
+	# Important: menus must never inherit a captured cursor after scene switches.
+	if current_phase != ToolEnums.GamePhase.ACTIVE_FPS:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	window.grab_focus()
 
 func set_graphics_quality(quality: GraphicsQuality) -> void:
 	current_graphics_quality = quality
