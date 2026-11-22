@@ -18,3 +18,6 @@ signal steam_burst_requested(grid_pos: Vector2i)
 signal tool_action_performed(tool_type: ToolEnums.ToolType, grid_pos: Vector2i)
 signal well_proximity_changed(is_near_well: bool)
 signal graphics_quality_changed(quality: int)
+
+# Shared destination from the existing H navigator to radar and optional 3D arrow.
+signal navigator_target_changed(grid_pos: Vector2i, category: String)

@@ -80,6 +80,7 @@ func setup_view(simulator: GridSimulator) -> void:
 	_init_forest_vegetation(simulator.grid_width, simulator.grid_height)
 	_init_border_forest(simulator.grid_width, simulator.grid_height)
 	_init_posko_and_fences(simulator.grid_width, simulator.grid_height)
+	_create_enterable_outpost()
 	_refresh_all_visuals()
 
 func activate_planning_camera() -> void:
@@ -211,7 +212,9 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 			cell_holder.add_child(plant_holder)
 
 			var in_spawn_zone: bool = (x >= (width / 2) - 2 and x <= (width / 2) + 2 and y <= 2)
-			if not in_spawn_zone:
+			# Reserved 7x7 safety footprint: no trees, props or collider inside the outpost.
+			var reserved_outpost_zone: bool = x >= 5 and x <= 11 and y >= 0 and y <= 6
+			if not in_spawn_zone and not reserved_outpost_zone:
 				var q1_pos: Vector3 = Vector3(-0.78 + (rand_b - 0.5) * 0.25, 0.0, -0.78 + (rand_a - 0.5) * 0.25)
 				if rand_a > 0.36:
 					var tree_idx: int = int(rand_b * float(healthy_trees.size())) % healthy_trees.size()
@@ -242,6 +245,7 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 						fern_inst.scale = Vector3(fs, fs, fs)
 						fern_inst.position = q2_pos
 						fern_inst.rotation.y = rand_a * TAU
+						fern_inst.name = "WindPlant_Fern"
 						plant_holder.add_child(fern_inst)
 					else:
 						var pbig_inst: Node3D = plant_big_scene.instantiate() as Node3D
@@ -249,6 +253,7 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 						pbig_inst.scale = Vector3(ps, ps, ps)
 						pbig_inst.position = q2_pos
 						pbig_inst.rotation.y = rand_b * TAU
+						pbig_inst.name = "WindPlant_Broadleaf"
 						plant_holder.add_child(pbig_inst)
 
 				var q3_pos: Vector3 = Vector3(-0.75 + (rand_b - 0.5) * 0.22, 0.0, 0.82 + (rand_a - 0.5) * 0.22)
@@ -271,6 +276,7 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 						bush_inst.scale = Vector3(bs, bs, bs)
 						bush_inst.position = q3_pos
 						bush_inst.rotation.y = rand_b * TAU
+						bush_inst.name = "WindPlant_Bush"
 						plant_holder.add_child(bush_inst)
 
 				var q4_pos: Vector3 = Vector3(0.78 + (rand_a - 0.5) * 0.22, 0.0, 0.78 + (rand_b - 0.5) * 0.22)
@@ -295,6 +301,7 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 						grass_inst.scale = Vector3(gs, gs, gs)
 						grass_inst.position = q4_pos
 						grass_inst.rotation.y = rand_a * PI
+						grass_inst.name = "WindPlant_Grass"
 						plant_holder.add_child(grass_inst)
 
 			cell_visual_nodes[pos] = cell_holder
@@ -304,6 +311,9 @@ func _init_border_forest(width: int, height: int) -> void:
 	for y in range(-3, height + 3):
 		for x in range(-3, width + 3):
 			if x >= 0 and x < width and y >= 0 and y < height:
+				continue
+			# Tall border trees can lean through roof and wall even from outside the map.
+			if x >= 4 and x <= 12 and y >= -3 and y <= 5:
 				continue
 			var hash_val: float = sin(float(x * 19 + y * 41)) * 28374.11
 			var rand_val: float = hash_val - floorf(hash_val)
@@ -321,29 +331,29 @@ func _init_posko_and_fences(width: int, height: int) -> void:
 	var cell_sz: float = GameState.CELL_SIZE
 	var tent_a: Node3D = kenney_tent_scene.instantiate() as Node3D
 	tent_a.scale = Vector3(3.5, 3.5, 3.5)
-	tent_a.position = Vector3(5.4 * cell_sz, 0.0, 0.4 * cell_sz)
+	tent_a.position = Vector3(3.0 * cell_sz, 0.0, 0.4 * cell_sz)
 	tent_a.rotation.y = 0.25
 	props_container.add_child(tent_a)
 
 	var tent_b: Node3D = kenney_tent_scene.instantiate() as Node3D
 	tent_b.scale = Vector3(3.5, 3.5, 3.5)
-	tent_b.position = Vector3(10.2 * cell_sz, 0.0, 0.4 * cell_sz)
+	tent_b.position = Vector3(12.8 * cell_sz, 0.0, 0.4 * cell_sz)
 	tent_b.rotation.y = -0.3
 	props_container.add_child(tent_b)
 
 	var stack_a: Node3D = kenney_log_stack_scene.instantiate() as Node3D
 	stack_a.scale = Vector3(2.4, 2.4, 2.4)
-	stack_a.position = Vector3(6.8 * cell_sz, 0.0, 0.4 * cell_sz)
+	stack_a.position = Vector3(3.1 * cell_sz, 0.0, 3.1 * cell_sz)
 	props_container.add_child(stack_a)
 
 	var camp_a: Node3D = kenney_campfire_scene.instantiate() as Node3D
 	camp_a.scale = Vector3(2.4, 2.4, 2.4)
-	camp_a.position = Vector3(9.0 * cell_sz, 0.0, 0.5 * cell_sz)
+	camp_a.position = Vector3(12.3 * cell_sz, 0.0, 3.0 * cell_sz)
 	props_container.add_child(camp_a)
 
 	var sign_a: Node3D = kenney_sign_scene.instantiate() as Node3D
 	sign_a.scale = Vector3(2.8, 2.8, 2.8)
-	sign_a.position = Vector3(7.1 * cell_sz, 0.0, 1.8 * cell_sz)
+	sign_a.position = Vector3(4.3 * cell_sz, 0.0, 1.2 * cell_sz)
 	sign_a.rotation.y = PI
 	props_container.add_child(sign_a)
 
@@ -370,6 +380,14 @@ func _init_posko_and_fences(width: int, height: int) -> void:
 		fn_right.rotation.y = -PI * 0.5
 		fn_right.position = Vector3(float(width) * cell_sz - cell_sz * 0.05, 0.0, float(y) * cell_sz)
 		props_container.add_child(fn_right)
+
+func _create_enterable_outpost() -> void:
+	# All procedural vegetation and their colliders are excluded during generation
+	# from the reserved footprint (x=5..11, y=0..6); no hidden colliders.
+	var outpost: EnterableOutpost3D = EnterableOutpost3D.new()
+	outpost.name = "PoskoOperasiMasuk"
+	outpost.position = Vector3(8.0 * GameState.CELL_SIZE, 0.0, 8.2)
+	props_container.add_child(outpost)
 
 func _refresh_all_visuals() -> void:
 	if grid_simulator == null or multi_mesh_instance.multimesh == null:
@@ -503,6 +521,10 @@ func _update_cell_visual(pos: Vector2i, cell: PeatCellData) -> void:
 			var dry_peat: Color = Color(0.32, 0.22, 0.13)
 			var moist_peat: Color = Color(0.14, 0.16, 0.09)
 			target_color = dry_peat.lerp(moist_peat, moisture_ratio)
+			# Wet peat appears darker with a subtle cool sheen after rain or spraying.
+			# Still one MultiMesh draw call; does not change physics or PFVI.
+			var wetness: float = smoothstep(0.48, 0.90, cell.soil_moisture)
+			target_color = target_color.lerp(Color(0.075, 0.105, 0.115, 1.0), wetness * 0.65)
 
 	target_cell_colors[pos] = target_color
 	animating_cells[pos] = true
@@ -578,10 +600,12 @@ func _update_dynamic_fog(delta: float) -> void:
 	if world_env == null or world_env.environment == null:
 		return
 	var hazard_ratio: float = clampf(float(GameState.active_fire_cells) / 14.0, 0.0, 1.0)
-	var target_density: float = lerpf(0.010, 0.032, hazard_ratio)
+	var rain_ratio: float = clampf(GameState.global_rainfall_rate / 12.0, 0.0, 1.0)
+	var target_density: float = lerpf(0.010, 0.032, hazard_ratio) + rain_ratio * 0.004
 	var clear_sky: Color = Color(0.58, 0.74, 0.86)
 	var smoky_sky: Color = Color(0.66, 0.54, 0.42)
 	var target_color: Color = clear_sky.lerp(smoky_sky, hazard_ratio)
+	target_color = target_color.lerp(Color(0.36, 0.43, 0.51), rain_ratio * 0.45)
 	world_env.environment.fog_density = lerpf(world_env.environment.fog_density, target_density, delta * 1.5)
 	world_env.environment.fog_light_color = world_env.environment.fog_light_color.lerp(target_color, delta * 1.5)
 	world_env.environment.background_color = world_env.environment.background_color.lerp(target_color, delta * 1.5)

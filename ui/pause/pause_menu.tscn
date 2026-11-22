@@ -45,9 +45,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -240.0
-offset_top = -220.0
+offset_top = -265.0
 offset_right = 240.0
-offset_bottom = 220.0
+offset_bottom = 265.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_pause")
@@ -106,4 +106,4 @@ text = "ULANGI SKENARIO"
 [node name="BtnMenu" type="Button" parent="CenterPanel/VBox"]
 custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
-text = "KEMBALI KE MENU UTAMA"
+text = "AKHIRI MISI & LIHAT EVALUASI"

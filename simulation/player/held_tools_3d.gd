@@ -14,12 +14,26 @@ var equip_offset_y: float = 0.0
 var sway_target: Vector2 = Vector2.ZERO
 var is_using_continuous: bool = false
 var active_tool: ToolEnums.ToolType = ToolEnums.ToolType.SEMPROT_PERMUKAAN
+var aim_target: Vector3 = Vector3.ZERO
+var has_aim_target: bool = false
 
 func _ready() -> void:
 	position = base_position
 	EventBus.tool_selected.connect(_on_tool_selected)
+	EventBus.graphics_quality_changed.connect(_on_quality_changed)
+	_on_quality_changed(int(GameState.current_graphics_quality))
 	EventBus.tool_action_performed.connect(_on_tool_action_performed)
 	_on_tool_selected(GameState.current_tool)
+
+func set_aim_target(world_target: Vector3, valid: bool) -> void:
+	aim_target = world_target
+	has_aim_target = valid
+
+func _on_quality_changed(quality: int) -> void:
+	if water_jet_particles == null:
+		return
+	var ratios: Array[float] = [0.40, 0.75, 1.0]
+	water_jet_particles.amount_ratio = ratios[clampi(quality, 0, 2)]
 
 func apply_mouse_sway(relative: Vector2) -> void:
 	sway_target.x = clampf(sway_target.x - relative.x * 0.0012, -0.045, 0.045)
@@ -58,6 +72,16 @@ func _process(delta: float) -> void:
 
 	var target_pos: Vector3 = base_position + Vector3(bob_x + sway_target.x, bob_y + sway_target.y + equip_offset_y, 0.0) + action_offset
 	var target_rot: Vector3 = Vector3(action_rot.x + (sway_target.y * 0.8), sway_target.x * 1.1, 0.0)
+	if has_aim_target and get_parent() is Camera3D:
+		# Camera-space targeting: pitch and yaw follow the actual selected grid cell
+		# instead of always pointing the hand/tool toward the ground.
+		var cam: Camera3D = get_parent() as Camera3D
+		var aim_local: Vector3 = cam.to_local(aim_target) - base_position
+		var horizontal_dist: float = maxf(0.1, Vector2(aim_local.x, aim_local.z).length())
+		var pitch: float = atan2(aim_local.y, horizontal_dist)
+		var yaw: float = atan2(aim_local.x, maxf(0.2, -aim_local.z))
+		target_rot.x += clampf(pitch, -1.0, 0.65) * 0.85
+		target_rot.y += clampf(yaw, -0.75, 0.75) * 0.85
 
 	position = position.lerp(target_pos, clampf(delta * 16.0, 0.0, 1.0))
 	rotation = rotation.lerp(target_rot, clampf(delta * 16.0, 0.0, 1.0))

@@ -22,5 +22,6 @@ enum GamePhase {
 	ACTIVE_FPS,
 	PAUSED,
 	VICTORY,
-	DEFEAT
+	DEFEAT,
+	ABORTED
 }
