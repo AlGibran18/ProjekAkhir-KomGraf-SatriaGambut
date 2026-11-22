@@ -44,7 +44,7 @@ func _on_phase_changed(phase: ToolEnums.GamePhase) -> void:
 			recording = true
 			run_stamp = Time.get_datetime_string_from_system().replace(":", "-").replace("T", "_")
 		return
-	if phase == ToolEnums.GamePhase.VICTORY or phase == ToolEnums.GamePhase.DEFEAT:
+	if phase == ToolEnums.GamePhase.VICTORY or phase == ToolEnums.GamePhase.DEFEAT or phase == ToolEnums.GamePhase.ABORTED:
 		if recording:
 			_record_snapshot()
 			recording = false
@@ -116,7 +116,11 @@ func export_reports() -> Dictionary:
 		csv.store_csv_line(values)
 	csv.close()
 
-	var result: String = "VICTORY" if GameState.current_phase == ToolEnums.GamePhase.VICTORY else "DEFEAT"
+	var result: String = "ABORTED"
+	if GameState.current_phase == ToolEnums.GamePhase.VICTORY:
+		result = "VICTORY"
+	elif GameState.current_phase == ToolEnums.GamePhase.DEFEAT:
+		result = "DEFEAT"
 	var summary: Dictionary = {
 		"game": "Satria Gambut",
 		"level": GameState.current_level_index + 1,
