@@ -16,6 +16,9 @@ var is_using_tool: bool = false
 var active_tool: ToolEnums.ToolType = ToolEnums.ToolType.SEMPROT_PERMUKAAN
 var dig_timer: float = 0.0
 var action_clock: float = 0.0
+var aim_target_world: Vector3 = Vector3.ZERO
+var has_aim_target: bool = false
+var action_pulse: float = 0.0
 
 func _ready() -> void:
 	var red: Material = _mat(Color(0.80, 0.11, 0.10))
@@ -52,11 +55,16 @@ func _ready() -> void:
 	EventBus.tool_selected.connect(_on_tool_changed)
 	_on_tool_changed(GameState.current_tool)
 
+func set_aim_target(world_target: Vector3, valid: bool) -> void:
+	aim_target_world = world_target
+	has_aim_target = valid
+
 func animate_movement(delta: float, is_moving: bool, sprinting: bool) -> void:
 	if is_moving:
 		stride += delta * (11.0 if sprinting else 7.3)
 	var amount: float = (0.52 if sprinting else 0.33) if is_moving else 0.0
 	dig_timer = maxf(0.0, dig_timer - delta)
+	action_pulse = maxf(0.0, action_pulse - delta)
 	action_clock += delta
 	left_leg.rotation.x = lerpf(left_leg.rotation.x, sin(stride) * amount, minf(1.0, delta * 10.0))
 	right_leg.rotation.x = lerpf(right_leg.rotation.x, -sin(stride) * amount, minf(1.0, delta * 10.0))
@@ -72,12 +80,32 @@ func animate_movement(delta: float, is_moving: bool, sprinting: bool) -> void:
 		elif active_tool == ToolEnums.ToolType.TOMBAK_GAMBUT:
 			left_pose = -0.67 + sin(action_clock * 13.0) * 0.11
 			right_pose = -0.81 + sin(action_clock * 13.0) * 0.11
+	if has_aim_target and (is_using_tool or dig_timer > 0.0):
+		# Arms follow the highlighted grid cell: tilt up for distant/raised
+		# targets and down for close ground work, within natural pose limits.
+		var local_aim: Vector3 = to_local(aim_target_world)
+		var distance_xz: float = maxf(0.2, Vector2(local_aim.x, local_aim.z).length())
+		var elevation: float = atan2(local_aim.y - 1.4, distance_xz)
+		var pitch_offset: float = clampf(elevation, -0.70, 0.55)
+		left_pose -= pitch_offset * 0.60
+		right_pose -= pitch_offset * 0.60
+		var turn: float = clampf(atan2(local_aim.x, maxf(0.3, -local_aim.z)), -0.48, 0.48)
+		left_arm.rotation.y = lerpf(left_arm.rotation.y, turn * 0.50, minf(1.0, delta * 11.0))
+		right_arm.rotation.y = lerpf(right_arm.rotation.y, turn * 0.55, minf(1.0, delta * 11.0))
+	else:
+		left_arm.rotation.y = lerpf(left_arm.rotation.y, 0.0, minf(1.0, delta * 11.0))
+		right_arm.rotation.y = lerpf(right_arm.rotation.y, 0.0, minf(1.0, delta * 11.0))
 	left_arm.rotation.x = lerpf(left_arm.rotation.x, left_pose, minf(1.0, delta * 12.0))
 	right_arm.rotation.x = lerpf(right_arm.rotation.x, right_pose, minf(1.0, delta * 12.0))
 	if spray_particles != null:
 		spray_particles.emitting = visible and is_using_tool and active_tool == ToolEnums.ToolType.SEMPROT_PERMUKAAN
 	if tool_mount != null:
-		tool_mount.rotation.x = -0.35 if is_using_tool and active_tool == ToolEnums.ToolType.TOMBAK_GAMBUT else 0.0
+		if has_aim_target and (is_using_tool or dig_timer > 0.0):
+			var muzzle: Vector3 = tool_mount.global_position
+			if muzzle.distance_to(aim_target_world) > 0.15:
+				tool_mount.look_at(aim_target_world, Vector3.UP)
+		else:
+			tool_mount.rotation = tool_mount.rotation.lerp(Vector3.ZERO, minf(1.0, delta * 9.0))
 
 func _mat(tint: Color) -> Material:
 	var m: StandardMaterial3D = StandardMaterial3D.new()
@@ -240,6 +268,7 @@ func _update_equipped_tool() -> void:
 func _on_tool_action(tool: ToolEnums.ToolType, _pos: Vector2i) -> void:
 	if tool == ToolEnums.ToolType.SEKAT_BAKAR:
 		dig_timer = 0.60
+		action_pulse = 0.60
 		if dig_dust != null and visible:
 			dig_dust.restart()
 			dig_dust.emitting = true
