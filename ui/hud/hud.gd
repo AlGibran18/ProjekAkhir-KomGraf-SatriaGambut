@@ -34,8 +34,19 @@ var grid_simulator: GridSimulator
 var player_node: Node3D
 var toast_timer: float = 0.0
 var minimap_timer: float = 0.0
+var proximity_timer: float = 0.0
+var danger_strength: float = 0.0
+var danger_overlay: ColorRect
 
 func _ready() -> void:
+	# Subtle full-screen danger tint rendered behind the existing HUD widgets.
+	danger_overlay = ColorRect.new()
+	danger_overlay.name = "ProximityFireWarning"
+	danger_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	danger_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	danger_overlay.color = Color(0.85, 0.08, 0.025, 0.0)
+	add_child(danger_overlay)
+	move_child(danger_overlay, 0)
 	EventBus.water_changed.connect(_on_water_changed)
 	EventBus.tool_selected.connect(_on_tool_selected)
 	EventBus.thermal_mode_toggled.connect(_on_thermal_mode_toggled)
@@ -66,6 +77,12 @@ func setup_hud(simulator: GridSimulator, player: Node3D) -> void:
 func _process(delta: float) -> void:
 	if not visible:
 		return
+	proximity_timer += delta
+	if proximity_timer >= 0.25:
+		proximity_timer = 0.0
+		_calculate_fire_proximity()
+	var pulse: float = 0.86 + sin(Time.get_ticks_msec() * 0.006) * 0.14
+	danger_overlay.color = Color(0.85, 0.08, 0.025, clampf(danger_strength * pulse * 0.10, 0.0, 0.10))
 	if toast_timer > 0.0:
 		toast_timer -= delta
 		if toast_timer <= 0.0:
@@ -220,3 +237,19 @@ func _on_minimap_draw() -> void:
 		var dir2: Vector2 = Vector2(fwd.x, fwd.z).normalized()
 		minimap_canvas.draw_line(p_vec, p_vec + dir2 * 10.0, Color.CYAN, 2.0)
 		minimap_canvas.draw_circle(p_vec, 4.0, Color.WHITE)
+
+# Read-only visual feedback: no health, damage or game-rule changes.
+# Only visible surface fire triggers this warning; underground embers remain hidden.
+func _calculate_fire_proximity() -> void:
+	if player_node == null or grid_simulator == null:
+		danger_strength = 0.0
+		return
+	var player_pos: Vector2 = Vector2(player_node.global_position.x, player_node.global_position.z)
+	var min_distance: float = INF
+	for pos in grid_simulator.cells.keys():
+		var cell: PeatCellData = grid_simulator.cells[pos]
+		if not cell.is_burning():
+			continue
+		var world_pos: Vector2 = Vector2(float(pos.x), float(pos.y)) * GameState.CELL_SIZE
+		min_distance = minf(min_distance, player_pos.distance_to(world_pos))
+	danger_strength = clampf((9.0 - min_distance) / 7.0, 0.0, 1.0)
