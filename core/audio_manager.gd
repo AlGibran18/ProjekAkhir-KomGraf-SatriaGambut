@@ -147,5 +147,14 @@ func _on_tool_action(tool_type: ToolEnums.ToolType, _pos: Vector2i) -> void:
 			play_spray_throttled()
 
 func _on_phase_changed(new_phase: ToolEnums.GamePhase) -> void:
+	if new_phase == ToolEnums.GamePhase.ACTIVE_FPS:
+		play_game_music()
+		if music_player != null:
+			music_player.volume_db = -32.0
+	elif new_phase == ToolEnums.GamePhase.PAUSED:
+		if music_player != null:
+			music_player.volume_db = -39.0
+	elif new_phase == ToolEnums.GamePhase.VICTORY or new_phase == ToolEnums.GamePhase.DEFEAT or new_phase == ToolEnums.GamePhase.ABORTED:
+		play_menu_music()
 	if new_phase == ToolEnums.GamePhase.VICTORY:
 		play_sfx("victory", -2.0)
