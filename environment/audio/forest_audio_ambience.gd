@@ -82,7 +82,7 @@ func _update_environment_audio(delta: float) -> void:
 
 	# Rain/wind fade smoothly when a weather front changes.
 	var wind_target: float = lerpf(-36.0, -18.0, wind_ratio)
-	var rain_target: float = lerpf(-65.0, -13.0, rain_ratio)
+	var rain_target: float = lerpf(-80.0, -13.0, rain_ratio)
 	current_wind_db = move_toward(current_wind_db, wind_target, delta * 18.0)
 	current_rain_db = move_toward(current_rain_db, rain_target, delta * 18.0)
 	wind_player.volume_db = current_wind_db
@@ -119,7 +119,6 @@ func _build_noise_loop(kind: int) -> AudioStreamWAV:
 	var low: float = 0.0
 	var medium: float = 0.0
 	var crackle: float = 0.0
-	var prev: float = 0.0
 	for i in range(sample_count):
 		var noise: float = rng.randf_range(-1.0, 1.0)
 		low = low * 0.993 + noise * 0.007
@@ -139,7 +138,6 @@ func _build_noise_loop(kind: int) -> AudioStreamWAV:
 		var edge: float = minf(float(i) / 1200.0, float(sample_count - 1 - i) / 1200.0)
 		sample *= clampf(edge, 0.0, 1.0)
 		sample = clampf(sample, -0.95, 0.95)
-		prev = sample
 		pcm.encode_s16(i * 2, int(roundf(sample * 32767.0)))
 
 	var result: AudioStreamWAV = AudioStreamWAV.new()
