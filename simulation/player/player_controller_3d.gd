@@ -19,6 +19,7 @@ var ground_plane: Plane = Plane(Vector3.UP, 0.0)
 var was_near_well: bool = false
 var head_bob_time: float = 0.0
 var cinematic_mode_enabled: bool = false
+var tactical_map_open: bool = false
 var third_person_enabled: bool = false
 var third_person_arm: SpringArm3D
 var third_person_camera: Camera3D
@@ -50,7 +51,7 @@ func release_mouse_cursor() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 func _unhandled_input(event: InputEvent) -> void:
-	if GameState.current_phase != ToolEnums.GamePhase.ACTIVE_FPS:
+	if GameState.current_phase != ToolEnums.GamePhase.ACTIVE_FPS or tactical_map_open:
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -82,6 +83,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			EventBus.cell_clicked.emit(current_targeted_cell)
 
 func _physics_process(delta: float) -> void:
+	if tactical_map_open:
+		if grid_simulator != null:
+			grid_simulator.cancel_injection()
+		if held_tools != null:
+			held_tools.set_movement_state(false, false)
+		return
 	if GameState.current_phase != ToolEnums.GamePhase.ACTIVE_FPS:
 		if held_tools != null:
 			held_tools.set_movement_state(false, false)
