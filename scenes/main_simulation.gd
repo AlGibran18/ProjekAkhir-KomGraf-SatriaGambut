@@ -14,6 +14,7 @@ var has_transitioned_from_planning: bool = false
 var mission_director: MissionDirector
 var weather_ambience: WeatherAmbience3D
 var forest_audio: ForestAudioAmbience
+var lightning_system: StormLightning3D
 
 func _ready() -> void:
 	grid_simulator.initialize_level(GameState.current_level_index)
@@ -31,6 +32,10 @@ func _ready() -> void:
 	forest_audio = ForestAudioAmbience.new()
 	forest_audio.initialize(player, grid_simulator)
 	add_child(forest_audio)
+
+	lightning_system = StormLightning3D.new()
+	lightning_system.initialize(weather_ambience, forest_audio, simulation_view_3d)
+	add_child(lightning_system)
 
 	hud.setup_hud(grid_simulator, player)
 	planning_overlay.setup_planning(grid_simulator)
