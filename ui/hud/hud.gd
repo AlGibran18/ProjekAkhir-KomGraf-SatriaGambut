@@ -41,6 +41,10 @@ var expanded_map: Control
 var expanded_map_canvas: Control
 var map_is_open: bool = false
 var previous_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_CAPTURED
+var nav_cell: Vector2i = Vector2i(-1, -1)
+var nav_category: String = ""
+var nav_pulse: float = 0.0
+var modern_panel_lookup: Array[PanelContainer] = []
 
 func _ready() -> void:
 	# Subtle full-screen danger tint rendered behind the existing HUD widgets.
@@ -62,6 +66,8 @@ func _ready() -> void:
 	EventBus.game_phase_changed.connect(_on_phase_changed)
 	minimap_canvas.draw.connect(_on_minimap_draw)
 	_create_expanded_map()
+	_style_modern_hud()
+	EventBus.navigator_target_changed.connect(_on_navigator_target_changed)
 
 	btn_sekat.pressed.connect(func() -> void: _select_tool(ToolEnums.ToolType.SEKAT_BAKAR))
 	btn_semprot.pressed.connect(func() -> void: _select_tool(ToolEnums.ToolType.SEMPROT_PERMUKAAN))
@@ -82,6 +88,7 @@ func setup_hud(simulator: GridSimulator, player: Node3D) -> void:
 func _process(delta: float) -> void:
 	if not visible:
 		return
+	nav_pulse += delta
 	proximity_timer += delta
 	if proximity_timer >= 0.25:
 		proximity_timer = 0.0
@@ -120,7 +127,7 @@ func _on_water_changed(current: float, max_val: float) -> void:
 		water_progress_bar.max_value = max_val
 		water_progress_bar.value = current
 	if water_label != null:
-		water_label.text = "Air: %d / %d L" % [int(current), int(max_val)]
+		water_label.text = "AIR  %d / %d L" % [int(current), int(max_val)]
 
 func _on_tool_selected(tool_type: ToolEnums.ToolType) -> void:
 	btn_sekat.button_pressed = (tool_type == ToolEnums.ToolType.SEKAT_BAKAR)
@@ -136,7 +143,7 @@ func _on_thermal_mode_toggled(enabled: bool) -> void:
 func _on_mission_stats_updated(burned: int, safe: int, active: int) -> void:
 	if stats_label != null:
 		var safe_pct: float = (float(safe) / maxf(1.0, float(GameState.total_cells))) * 100.0
-		stats_label.text = "Hotspot: %d (Bara Dalam: %d) | Aman: %.0f%% | Hangus: %d" % [
+		stats_label.text = "API  %d   |   BARA  %d   |   AMAN  %.0f%%   |   HANGUS  %d" % [
 			active, GameState.subsurface_only_cells, safe_pct, burned
 		]
 
@@ -199,8 +206,8 @@ func _on_cell_hovered(pos: Vector2i, cell: PeatCellData) -> void:
 
 func _update_weather_display() -> void:
 	if weather_label != null:
-		weather_label.text = "Suhu: %.1f°C | Angin: %.0f km/h" % [
-			GameState.ambient_temperature, GameState.wind_speed_kmh
+		weather_label.text = "CUACA  %.1f°C   |   ANGIN  %.0f km/h   |   HUJAN %.1f mm" % [
+			GameState.ambient_temperature, GameState.wind_speed_kmh, GameState.global_rainfall_rate
 		]
 
 func _input(event: InputEvent) -> void:
@@ -270,6 +277,63 @@ func _create_expanded_map() -> void:
 	footer.add_theme_font_size_override("font_size", 12)
 	body.add_child(footer)
 	expanded_map.visible = false
+
+# Visual-only radar navigation. H itself is handled by MissionDirector, never twice.
+func _on_navigator_target_changed(cell: Vector2i, category: String) -> void:
+	nav_cell = cell
+	nav_category = category
+	minimap_canvas.queue_redraw()
+	if expanded_map_canvas != null:
+		expanded_map_canvas.queue_redraw()
+
+func _panel_style(accent: Color) -> StyleBoxFlat:
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = Color(0.023, 0.065, 0.082, 0.87)
+	style.border_color = accent.darkened(0.25)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(13)
+	style.content_margin_left = 11
+	style.content_margin_right = 11
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	style.shadow_color = Color(0, 0, 0, 0.30)
+	style.shadow_size = 7
+	return style
+
+func _style_modern_hud() -> void:
+	var water_panel: PanelContainer = $RootMargin/MainContainer/TopRow/TopLeftBox/TopBar/WaterPanel
+	var weather_panel: PanelContainer = $RootMargin/MainContainer/TopRow/TopLeftBox/TopBar/WeatherPanel
+	var fire_panel: PanelContainer = $RootMargin/MainContainer/TopRow/TopLeftBox/TopBar/StatsPanel
+	var map_panel: PanelContainer = $RootMargin/MainContainer/TopRow/MiniMapPanel
+	var cell_panel: PanelContainer = $RootMargin/MainContainer/BottomRow/CellInfoPanel
+	var hint_panel: PanelContainer = $RootMargin/MainContainer/HintPanel
+	for item in [
+		{"panel": water_panel, "accent": Color(0.18, 0.83, 0.99)},
+		{"panel": weather_panel, "accent": Color(0.95, 0.69, 0.28)},
+		{"panel": fire_panel, "accent": Color(0.98, 0.39, 0.24)},
+		{"panel": map_panel, "accent": Color(0.13, 0.97, 0.68)},
+		{"panel": cell_panel, "accent": Color(0.32, 0.71, 0.93)},
+		{"panel": hint_panel, "accent": Color(0.30, 0.77, 0.65)}
+	]:
+		var panel: PanelContainer = item["panel"]
+		panel.add_theme_stylebox_override("panel", _panel_style(item["accent"]))
+	for label in [water_label, weather_label, stats_label]:
+		label.add_theme_font_size_override("font_size", 13)
+		label.add_theme_color_override("font_color", Color(0.92, 0.97, 0.96))
+	var water_style: StyleBoxFlat = StyleBoxFlat.new()
+	water_style.bg_color = Color(0.12, 0.74, 0.94)
+	water_style.set_corner_radius_all(5)
+	var water_bg: StyleBoxFlat = StyleBoxFlat.new()
+	water_bg.bg_color = Color(0.07, 0.21, 0.27, 0.85)
+	water_bg.set_corner_radius_all(5)
+	water_progress_bar.add_theme_stylebox_override("fill", water_style)
+	water_progress_bar.add_theme_stylebox_override("background", water_bg)
+	var radar_title: Label = $RootMargin/MainContainer/TopRow/MiniMapPanel/VBox/Title
+	radar_title.text = "TACTICAL RADAR  •  [M] MAP  •  [H] GUIDE"
+	radar_title.add_theme_color_override("font_color", Color(0.42, 1.0, 0.80))
+	radar_title.add_theme_font_size_override("font_size", 11)
+	var help_label: Label = $RootMargin/MainContainer/HintPanel/HintLabel
+	help_label.text = "WASD Move  |  V FPS/TPP  |  H Guide  |  M Map  |  ESC Pause  |  F10 Photo Mode"
 
 func _draw_expanded_map() -> void:
 	if expanded_map_canvas != null:
@@ -368,6 +432,35 @@ func _draw_radar(canvas: Control, expanded: bool) -> void:
 			var sy: float = 1.0 if flip_y == 0.0 else -1.0
 			canvas.draw_line(base, base + Vector2(sx * corner, 0), bracket_color, 2.8)
 			canvas.draw_line(base, base + Vector2(0, sy * corner), bracket_color, 2.8)
+	# Animated navigation target with route line. Always visible on radar even
+	# when the world arrow is disabled in preferences.
+	if nav_cell != Vector2i(-1, -1) and player_node != null:
+		var target_point: Vector2 = Vector2((float(nav_cell.x) + 0.5) * cell_w, (float(nav_cell.y) + 0.5) * cell_h)
+		var from_point: Vector2 = Vector2(
+			(player_node.global_position.x / GameState.CELL_SIZE + 0.5) * cell_w,
+			(player_node.global_position.z / GameState.CELL_SIZE + 0.5) * cell_h
+		)
+		var nav_color: Color = Color(1.0, 0.68, 0.25)
+		if nav_category == "SUMUR AIR":
+			nav_color = Color(0.30, 0.82, 1.0)
+		elif nav_category == "POS PENGAMATAN":
+			nav_color = Color(0.22, 1.0, 0.69)
+		var wave: float = 0.5 + 0.5 * sin(nav_pulse * 5.5)
+		var small: float = 7.0 if not expanded else 13.0
+		var heading: Vector2 = target_point - from_point
+		if heading.length_squared() > 1.0:
+			var direction: Vector2 = heading.normalized()
+			var perp: Vector2 = Vector2(-direction.y, direction.x)
+			canvas.draw_line(from_point, target_point, Color(nav_color.r, nav_color.g, nav_color.b, 0.38), 2.0 if expanded else 1.4, true)
+			var moving: Vector2 = from_point.lerp(target_point, fposmod(nav_pulse * 0.3, 1.0))
+			var chevron: PackedVector2Array = PackedVector2Array([
+				moving + direction * small * 0.65,
+				moving - direction * small * 0.35 + perp * small * 0.38,
+				moving - direction * small * 0.35 - perp * small * 0.38
+			])
+			canvas.draw_colored_polygon(chevron, nav_color)
+		canvas.draw_arc(target_point, small + 3.0 + wave * 5.0, 0.0, TAU, 32, Color(nav_color.r, nav_color.g, nav_color.b, 0.55 + wave * 0.42), 2.1)
+		canvas.draw_circle(target_point, 3.8 if not expanded else 6.0, nav_color)
 	canvas.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.20, 0.86, 0.73, 0.85), false, 2.0)
 	if expanded:
 		var font: Font = ThemeDB.fallback_font
