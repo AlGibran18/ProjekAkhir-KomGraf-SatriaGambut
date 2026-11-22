@@ -58,7 +58,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				grid_simulator.cancel_injection()
 			GameState.set_game_phase(ToolEnums.GamePhase.PAUSED)
 		elif event.keycode == KEY_E and was_near_well:
-			if GameState.refill_water(GameState.max_water_capacity):
+			if _refill_nearby_well(GameState.max_water_capacity) / 1.0 > 0.0:
 				AudioManager.play_sfx("refill", -3.0)
 				EventBus.educational_toast.emit("Tangki air terisi penuh!", false)
 
@@ -188,5 +188,15 @@ func _check_well_proximity(delta: float) -> void:
 		EventBus.well_proximity_changed.emit(near_well)
 
 	if near_well and GameState.current_water < GameState.max_water_capacity:
-		if GameState.refill_water(95.0 * delta):
+		if _refill_nearby_well(95.0 * delta) > 0.0:
 			AudioManager.play_refill_throttled()
+
+# Mengambil air hanya dari sumur yang berada dalam jangkauan dan masih berisi.
+func _refill_nearby_well(requested: float) -> float:
+	for well_pos in GameState.placed_wells:
+		var location: Vector3 = Vector3(float(well_pos.x) * GameState.CELL_SIZE, global_position.y, float(well_pos.y) * GameState.CELL_SIZE)
+		if global_position.distance_to(location) <= 4.5:
+			var transferred: float = GameState.refill_from_well(well_pos, requested)
+			if transferred > 0.0:
+				return transferred
+	return 0.0
