@@ -65,11 +65,13 @@ func _create_mission_hud() -> void:
 	panel.custom_minimum_size = Vector2(330, 0)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = Color(0.025, 0.075, 0.085, 0.88)
-	style.border_color = Color(0.17, 0.82, 0.71, 0.75)
+	style.bg_color = Color(0.026, 0.069, 0.087, 0.90)
+	style.border_color = Color(0.22, 0.92, 0.72, 0.75)
 	style.set_border_width_all(1)
-	style.set_corner_radius_all(10)
-	style.content_margin_left = 12.0
+	style.set_corner_radius_all(15)
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.35)
+	style.shadow_size = 10
+	style.content_margin_left = 14.0
 	style.content_margin_right = 12.0
 	style.content_margin_top = 10.0
 	style.content_margin_bottom = 10.0
@@ -79,7 +81,7 @@ func _create_mission_hud() -> void:
 	stack.add_theme_constant_override("separation", 5)
 	panel.add_child(stack)
 	var title: Label = Label.new()
-	title.text = "OPERASI SATRIA GAMBUT"
+	title.text = "SATGAS  /  OPERASI SATRIA GAMBUT"
 	title.add_theme_color_override("font_color", Color(0.42, 0.95, 0.75))
 	title.add_theme_font_size_override("font_size", 17)
 	stack.add_child(title)
@@ -95,6 +97,14 @@ func _create_mission_hud() -> void:
 	progress_bar.custom_minimum_size.y = 10.0
 	progress_bar.show_percentage = false
 	progress_bar.max_value = 100.0
+	var progress_fill: StyleBoxFlat = StyleBoxFlat.new()
+	progress_fill.bg_color = Color(0.28, 0.91, 0.69)
+	progress_fill.set_corner_radius_all(6)
+	progress_bar.add_theme_stylebox_override("fill", progress_fill)
+	var progress_bg: StyleBoxFlat = StyleBoxFlat.new()
+	progress_bg.bg_color = Color(0.07, 0.23, 0.24)
+	progress_bg.set_corner_radius_all(6)
+	progress_bar.add_theme_stylebox_override("background", progress_bg)
 	stack.add_child(progress_bar)
 	weather_label = Label.new()
 	weather_label.add_theme_font_size_override("font_size", 12)
@@ -156,13 +166,13 @@ func _refresh_ui() -> void:
 	var cleared: int = maxi(0, base_hotspots - active)
 	var prog: float = clampf(100.0 * float(cleared) / float(base_hotspots), 0.0, 100.0)
 	progress_bar.value = prog
-	objective_label.text = "HOTSPOT: %d aktif  |  Pos: %s" % [active, "AMAN" if GameState.station_safe else "HANCUR"]
+	objective_label.text = "STATUS  /  %d HOTSPOT   •   POS %s" % [active, "AMAN" if GameState.station_safe else "HANCUR"]
 	_update_navigator()
-	weather_label.text = "CUACA: %.1f C  | Angin %.0f km/j  | Hujan %.1f mm" % [GameState.ambient_temperature, GameState.wind_speed_kmh, GameState.global_rainfall_rate]
+	weather_label.text = "CUACA  /  %.1f°C   •   ANGIN %.0f km/j   •   HUJAN %.1f mm" % [GameState.ambient_temperature, GameState.wind_speed_kmh, GameState.global_rainfall_rate]
 	var reserve_total: float = 0.0
 	for amount in GameState.well_reserves.values():
 		reserve_total += float(amount)
-	reserve_label.text = "CADANGAN SUMUR: %.0f L  | Air dipakai: %.0f L" % [reserve_total, GameState.water_used_total]
+	reserve_label.text = "LOGISTIK  /  SUMUR %.0f L   •   TERPAKAI %.0f L" % [reserve_total, GameState.water_used_total]
 	if GameState.current_level_index == 0:
 		var tips: Array[String] = [
 			"LATIHAN 1/4: [2] semprot api menggunakan klik kiri.",
