@@ -8,6 +8,9 @@ var world_view: SimulationView3D
 var rain_particles: GPUParticles3D
 var foliage: Array[Node3D] = []
 var foliage_phase: Array[float] = []
+var foliage_initial_rotations: Array[Vector3] = []
+var foliage_tick: float = 0.0
+const FOLIAGE_UPDATE_INTERVAL: float = 1.0 / 30.0
 var ambient_clock: float = 0.0
 var rain_fraction: float = 0.0
 var sun_default_energy: float = 1.0
@@ -44,7 +47,10 @@ func _process(delta: float) -> void:
 		process_mat.gravity = Vector3(wind.x * 1.6, -17.0, wind.y * 1.6)
 	_update_quality(int(GameState.current_graphics_quality))
 	_update_lighting(delta)
-	_animate_foliage()
+	foliage_tick += delta
+	if foliage_tick >= FOLIAGE_UPDATE_INTERVAL:
+		foliage_tick = fmod(foliage_tick, FOLIAGE_UPDATE_INTERVAL)
+		_animate_foliage()
 
 func _create_rain() -> void:
 	rain_particles = GPUParticles3D.new()
@@ -76,33 +82,48 @@ func _create_rain() -> void:
 	rain_particles.draw_pass_1 = streak
 	add_child(rain_particles)
 
+# Collect ALL eligible small plants, not just the first 80 grid cells.
+# IMPORTANT: animate each living plant, never PlantHolder as it may also
+# contain rigid rocks, logs, and stumps.
 func _collect_foliage() -> void:
+	foliage.clear()
+	foliage_phase.clear()
+	foliage_initial_rotations.clear()
 	if world_view == null:
 		return
-	# Limited small plants only, avoiding tree physics/collision jitter.
 	for holder_variant in world_view.cell_visual_nodes.values():
-		if foliage.size() >= 80:
-			break
 		var holder: Node3D = holder_variant as Node3D
 		if holder == null:
 			continue
-		var plant: Node3D = holder.get_node_or_null("PlantHolder") as Node3D
-		if plant == null:
+		var plant_holder: Node3D = holder.get_node_or_null("PlantHolder") as Node3D
+		if plant_holder == null:
 			continue
-		foliage.append(plant)
-		foliage_phase.append(float(foliage.size()) * 1.81)
+		for plant_node in plant_holder.get_children():
+			var plant: Node3D = plant_node as Node3D
+			if plant == null:
+				continue
+			# These names are assigned at spawn time in SimulationView3D.
+			# Never move props such as rock, log, stump or mushroom.
+			if not plant.name.begins_with("WindPlant_"):
+				continue
+			foliage.append(plant)
+			foliage_initial_rotations.append(plant.rotation)
+			# Stable phase offset prevents all foliage swaying in lockstep.
+			foliage_phase.append(float(foliage.size()) * 1.618)
 
 func _animate_foliage() -> void:
-	var wind_strength: float = clampf(GameState.wind_speed_kmh / 22.0, 0.0, 1.4)
-	var lean_x: float = GameState.wind_direction.y * wind_strength
-	var lean_z: float = -GameState.wind_direction.x * wind_strength
+	var wind_strength: float = clampf(GameState.wind_speed_kmh / 22.0, 0.0, 1.5)
+	var target_x: float = GameState.wind_direction.y * wind_strength
+	var target_z: float = -GameState.wind_direction.x * wind_strength
 	for i in range(foliage.size()):
 		var plant: Node3D = foliage[i]
 		if not is_instance_valid(plant) or not plant.visible:
 			continue
-		var wave: float = sin(ambient_clock * (1.4 + wind_strength) + foliage_phase[i])
-		plant.rotation.x = (lean_x + wave * 0.4) * 0.045
-		plant.rotation.z = (lean_z + wave * 0.4) * 0.045
+		var wave: float = sin(ambient_clock * (1.35 + wind_strength) + foliage_phase[i])
+		var flutter: float = sin(ambient_clock * (2.7 + wind_strength) + foliage_phase[i] * 1.37)
+		var start: Vector3 = foliage_initial_rotations[i]
+		plant.rotation.x = start.x + (target_x + wave * 0.48 + flutter * 0.12) * 0.055
+		plant.rotation.z = start.z + (target_z + wave * 0.48 + flutter * 0.12) * 0.055
 
 func _update_lighting(delta: float) -> void:
 	if world_view.sun_light == null:
