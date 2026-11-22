@@ -66,9 +66,9 @@ func _synthesize_music(energetic: bool) -> AudioStreamWAV:
 	var pcm: PackedByteArray = PackedByteArray()
 	pcm.resize(sample_count * 2)
 	# Self-composed major/minor modal motif; all notes and audio are original.
-	var roots: Array[float] = [146.83, 174.61, 130.81, 196.00] if energetic else [130.81, 164.81, 146.83, 174.61]
-	var motif: Array[int] = [0, 2, 4, 2, 5, 4, 2, 0, 2, 4, 7, 5, 4, 2, 0, 2]
-	var pentatonic: Array[float] = [1.0, 1.125, 1.25, 1.5, 1.6667, 2.0, 2.25, 2.5]
+	var roots: Array = [146.83, 174.61, 130.81, 196.00] if energetic else [130.81, 164.81, 146.83, 174.61]
+	var motif: Array = [0, 2, 4, 2, 5, 4, 2, 0, 2, 4, 7, 5, 4, 2, 0, 2]
+	var pentatonic: Array = [1.0, 1.125, 1.25, 1.5, 1.6667, 2.0, 2.25, 2.5]
 	for index in range(sample_count):
 		var sec: float = float(index) / float(RATE)
 		var beat: float = sec * (2.0 if energetic else 1.5)
