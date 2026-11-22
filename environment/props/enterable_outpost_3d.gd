@@ -10,6 +10,10 @@ var glass_mat: Material
 var accent: Material
 var floor_mat: Material
 var status_light: OmniLight3D
+var door_hinge: Node3D
+var door_tween: Tween
+var door_open: bool = false
+var door_target_player: Node3D
 
 func _ready() -> void:
 	wall = _material(Color(0.38, 0.43, 0.37))
@@ -19,6 +23,7 @@ func _ready() -> void:
 	accent = _material(Color(0.95, 0.71, 0.15))
 	floor_mat = _material(Color(0.19, 0.20, 0.19))
 	_build_outpost()
+	set_physics_process(true)
 
 func _build_outpost() -> void:
 	# Open entrance points toward the player's north-side starting area (-Z).
@@ -31,8 +36,9 @@ func _build_outpost() -> void:
 	_solid("FrontLeft", Vector3(-2.34, 1.60, -3.55), Vector3(2.32, 3.20, 0.18), wall)
 	_solid("FrontRight", Vector3(2.34, 1.60, -3.55), Vector3(2.32, 3.20, 0.18), wall)
 	_solid("DoorLintel", Vector3(0, 2.90, -3.55), Vector3(2.35, 0.55, 0.20), timber)
-	# Open door is visual only: no physical barrier across the entrance.
-	_visual("OpenDoorPanel", Vector3(1.13, 1.05, -3.32), Vector3(0.10, 2.05, 1.65), timber)
+	# Hinged 2.1 m door with a real collision box. Opens toward the west wall
+	# before the player reaches it, keeping the center of the entrance clear.
+	_create_animated_door()
 	_solid("Roof", Vector3(0, 3.27, 0), Vector3(7.80, 0.26, 7.90), roof_mat)
 	_visual("RoofRidge", Vector3(0, 3.45, 0), Vector3(0.32, 0.20, 8.0), accent)
 	for side_x in [-3.42, 3.42]:
@@ -69,6 +75,77 @@ func _build_outpost() -> void:
 	status_light.light_energy = 0.48
 	status_light.shadow_enabled = false
 	add_child(status_light)
+
+# Automatic proximity entrance: no extra input is required in FPS or TPP.
+# The door only closes after the player moves well clear of the doorway.
+func _create_animated_door() -> void:
+	door_hinge = Node3D.new()
+	door_hinge.name = "AnimatedDoorHinge"
+	door_hinge.position = Vector3(-1.10, 0.0, -3.48)
+	add_child(door_hinge)
+	var leaf: StaticBody3D = StaticBody3D.new()
+	leaf.name = "DoorLeafCollider"
+	leaf.collision_layer = 1
+	leaf.position = Vector3(1.05, 1.12, 0.0)
+	door_hinge.add_child(leaf)
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	mesh.name = "ReinforcedDoor"
+	var box: BoxMesh = BoxMesh.new()
+	box.size = Vector3(2.10, 2.24, 0.11)
+	mesh.mesh = box
+	mesh.material_override = timber
+	leaf.add_child(mesh)
+	var collision: CollisionShape3D = CollisionShape3D.new()
+	var shape: BoxShape3D = BoxShape3D.new()
+	shape.size = Vector3(2.10, 2.24, 0.11)
+	collision.shape = shape
+	leaf.add_child(collision)
+	# Highlight strips and door latch follow the hinge.
+	var knob: MeshInstance3D = MeshInstance3D.new()
+	knob.name = "DoorLatch"
+	var sphere: SphereMesh = SphereMesh.new()
+	sphere.radius = 0.095
+	sphere.height = 0.19
+	knob.mesh = sphere
+	knob.position = Vector3(0.88, 0.1, -0.11)
+	knob.material_override = accent
+	leaf.add_child(knob)
+	var marking: MeshInstance3D = MeshInstance3D.new()
+	marking.name = "EmergencyDoorStripe"
+	var stripe: BoxMesh = BoxMesh.new()
+	stripe.size = Vector3(1.84, 0.11, 0.13)
+	marking.mesh = stripe
+	marking.material_override = accent
+	marking.position = Vector3(0, 0.36, 0)
+	leaf.add_child(marking)
+	# Small outer sign to communicate that this entrance opens automatically.
+	_sign("PINTU OTOMATIS", Vector3(0, 2.49, -3.77), 16)
+
+func _physics_process(_delta: float) -> void:
+	if door_hinge == null or GameState.current_phase != ToolEnums.GamePhase.ACTIVE_FPS:
+		return
+	if door_target_player == null or not is_instance_valid(door_target_player):
+		door_target_player = get_tree().current_scene.get_node_or_null("PlayerController3D")
+	if door_target_player == null:
+		return
+	var distance: float = door_target_player.global_position.distance_to(global_position + Vector3(0, 0, -3.48))
+	# Hysteresis stops jitter and prevents the door closing on the player.
+	if not door_open and distance <= 4.2:
+		_set_door_open(true)
+	elif door_open and distance >= 6.3:
+		_set_door_open(false)
+
+func _set_door_open(open: bool) -> void:
+	if door_hinge == null or open == door_open:
+		return
+	door_open = open
+	if door_tween != null and door_tween.is_running():
+		door_tween.kill()
+	door_tween = create_tween()
+	door_tween.set_trans(Tween.TRANS_CUBIC)
+	door_tween.set_ease(Tween.EASE_IN_OUT)
+	# Closed = 0; open ≈ 100 degrees toward the west interior wall.
+	door_tween.tween_property(door_hinge, "rotation:y", deg_to_rad(100.0) if open else 0.0, 0.85)
 
 func _material(color: Color) -> Material:
 	var m: StandardMaterial3D = StandardMaterial3D.new()
