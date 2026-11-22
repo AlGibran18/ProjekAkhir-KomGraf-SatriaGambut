@@ -90,7 +90,7 @@ func _on_phase_changed(phase: ToolEnums.GamePhase) -> void:
 		if player != null:
 			player.cinematic_mode_enabled = false
 			if player.held_tools != null:
-				player.held_tools.visible = true
+				player.held_tools.visible = not player.third_person_enabled
 	else:
 		_apply_cinematic_visibility()
 
@@ -103,7 +103,7 @@ func _apply_cinematic_visibility() -> void:
 	if player != null:
 		player.cinematic_mode_enabled = playing and cinematic_active
 		if player.held_tools != null:
-			player.held_tools.visible = not (playing and cinematic_active)
+			player.held_tools.visible = not player.third_person_enabled and not (playing and cinematic_active)
 	if hud != null:
 		hud.visible = playing and not cinematic_active
 	if mission_director != null and mission_director.mission_layer != null:
