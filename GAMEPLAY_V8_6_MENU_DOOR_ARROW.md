@@ -1,5 +1,28 @@
 # Satria Gambut V8.6 — Animated Outpost Door, Modern Menu & Triangular Navigation Arrow
 
+## Current implementation — SAFE AUTOMATIC DOOR (replaces all earlier door instructions)
+
+The manual F-key door interaction has been **removed**. The outpost door now opens and closes automatically with safety behavior:
+
+- **Open:** player approaches within 5.0 metres on either side of the doorway, or is inside the outpost
+- **Hold open:** player is within 8.0 metres of the doorway **or anywhere inside the building**, including the threshold
+- **Close:** only after the player is outside, farther than 8.0 metres, continuously for at least 2.0 seconds
+- **Reopen:** if the player returns within the protected safety radius while the door is closing, the closing tween reverses
+- **Animation:** a gently eased 1.10-second swing using sine ease-in/out
+- **Collision:** solid only when fully shut. The moving leaf has collision disabled during opening and closing; after opening there is no hidden blocker. The closed leaf is physically solid.
+- **Prompt:** optional near-door indicator (no F-key request). No manual open/close hotkey remains.
+
+### Updated test checklist
+- [ ] Walk toward door in FPS and TPP, wait for automatic opening, enter through the center.
+- [ ] Stand still in the threshold and inside the room: door stays open indefinitely.
+- [ ] Leave room but remain near the outer doorway: door stays open.
+- [ ] Move more than 8m away and wait 2s: door closes smoothly.
+- [ ] Try to walk through it fully closed: leaf collision stops the player.
+- [ ] Approach while it closes: it immediately reopens and does not strike/push the player.
+- [ ] Check no prompt refers to F, and other controls still work.
+
+
+
 ## Door revision — manual interaction (latest V8.6 update)
 
 **This section overrides the earlier automatic-door descriptions below.** The door is now **manual**.
