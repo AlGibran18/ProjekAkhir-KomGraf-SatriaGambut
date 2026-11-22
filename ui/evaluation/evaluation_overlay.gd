@@ -42,7 +42,8 @@ func _on_phase_changed(new_phase: ToolEnums.GamePhase) -> void:
 		checklist_label.text = "[X] Gunakan Sekat Api [1] untuk memotong jalur angin & Tombak Gambut [3] untuk bara dalam!"
 		checklist_label.modulate = Color(1.0, 0.78, 0.65)
 
-	metrics_label.text = "LAPORAN EVALUASI ILMIAH:\n• Durasi Operasi: %02d:%02d\n• Lahan Gambut Selamat: %.1f%% (%d dari %d petak)\n• Cadangan Karbon Terselamatkan: %.1f ton CO₂e\n• Emisi Karbon Terlepas: %.1f ton CO₂e\n• Total Air Digunakan: %.0f Liter (%d Sumur Air terpasang)\n\nCatatan Edukasi: Lahan gambut menyimpan karbon 3x lebih besar dari hutan biasa. Menyuntikkan air ke bara bawah permukaan mencegah re-ignition!" % [
+	var medal_section: String = "SKOR MISI: %d/100  |  MEDALI: %s\n%s\n\n" % [GameState.mission_score, GameState.mission_medal, GameState.mission_notes]
+	metrics_label.text = medal_section + "LAPORAN EVALUASI ILMIAH:\n• Durasi Operasi: %02d:%02d\n• Lahan Gambut Selamat: %.1f%% (%d dari %d petak)\n• Cadangan Karbon Terselamatkan: %.1f ton CO₂e\n• Emisi Karbon Terlepas: %.1f ton CO₂e\n• Total Air Digunakan: %.0f Liter (%d Sumur Air terpasang)\n\nCatatan Edukasi: Lahan gambut menyimpan karbon 3x lebih besar dari hutan biasa. Menyuntikkan air ke bara bawah permukaan mencegah re-ignition!" % [
 		mins, secs, safe_pct, GameState.safe_cells, GameState.total_cells,
 		GameState.carbon_saved_tons, GameState.carbon_released_tons,
 		GameState.water_used_total, GameState.placed_wells.size()
