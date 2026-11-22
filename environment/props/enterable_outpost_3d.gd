@@ -144,8 +144,8 @@ func _set_door_open(open: bool) -> void:
 	door_tween = create_tween()
 	door_tween.set_trans(Tween.TRANS_CUBIC)
 	door_tween.set_ease(Tween.EASE_IN_OUT)
-	# Closed = 0; open ≈ 100 degrees toward the west interior wall.
-	door_tween.tween_property(door_hinge, "rotation:y", deg_to_rad(100.0) if open else 0.0, 0.85)
+	# Closed = 0; open ≈ 100 degrees into the room, clear of the outward approach.
+	door_tween.tween_property(door_hinge, "rotation:y", deg_to_rad(-100.0) if open else 0.0, 0.85)
 
 func _material(color: Color) -> Material:
 	var m: StandardMaterial3D = StandardMaterial3D.new()
