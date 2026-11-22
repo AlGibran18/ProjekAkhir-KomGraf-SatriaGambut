@@ -265,7 +265,7 @@ func _create_expanded_map() -> void:
 	expanded_map_canvas.draw.connect(_draw_expanded_map)
 	body.add_child(expanded_map_canvas)
 	var footer: Label = Label.new()
-	footer.text = "Peta situasi real-time • Bara bawah gambut terlihat hanya saat Thermal aktif"
+	footer.text = "LIVE GPS SIMULASI • N = UTARA • BARA TERSEMBUNYI HANYA TAMPIL SAAT THERMAL"
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer.add_theme_font_size_override("font_size", 12)
 	body.add_child(footer)
@@ -342,6 +342,32 @@ func _draw_radar(canvas: Control, expanded: bool) -> void:
 		])
 		canvas.draw_colored_polygon(arrow, Color(0.96, 0.98, 0.97))
 		canvas.draw_arc(player_pos, scale * 1.40, 0.0, TAU, 24, Color(0.51, 1.0, 0.94, 0.50), 1.0)
+	# Animated scanning sweep / compass rings for a modern tactical-radar look.
+	# All markers remain grounded in the real 16x16 game grid.
+	if player_node != null:
+		var radar_center: Vector2 = Vector2(
+			clampf((player_node.global_position.x / GameState.CELL_SIZE + 0.5) * cell_w, 3.0, sz.x - 3.0),
+			clampf((player_node.global_position.z / GameState.CELL_SIZE + 0.5) * cell_h, 3.0, sz.y - 3.0)
+		)
+		var radius_unit: float = minf(sz.x, sz.y) * (0.15 if expanded else 0.22)
+		for ring_idx in range(1, 4):
+			canvas.draw_arc(radar_center, radius_unit * float(ring_idx) / 2.0, 0.0, TAU, 40, Color(0.16, 0.91, 0.79, 0.18), 1.0)
+		var angle: float = float(Time.get_ticks_msec()) * 0.0006
+		var beam: Vector2 = Vector2(cos(angle), sin(angle)) * radius_unit * 1.5
+		canvas.draw_line(radar_center, radar_center + beam, Color(0.19, 0.98, 0.79, 0.23), 2.0)
+	if not GameState.station_safe:
+		var alarm_phase: float = 0.5 + 0.5 * sin(float(Time.get_ticks_msec()) * 0.010)
+		canvas.draw_arc(station, (18.0 if expanded else 10.0) + alarm_phase * 4.0, 0.0, TAU, 36, Color(1.0, 0.24, 0.18, 0.25 + alarm_phase * 0.60), 2.0)
+	# Corner brackets mimic ruggedized rescue-team GPS/radar displays.
+	var corner: float = 18.0 if expanded else 9.0
+	var bracket_color: Color = Color(0.52, 0.98, 0.84, 0.85)
+	for flip_x in [0.0, 1.0]:
+		for flip_y in [0.0, 1.0]:
+			var base: Vector2 = Vector2(flip_x * sz.x, flip_y * sz.y)
+			var sx: float = 1.0 if flip_x == 0.0 else -1.0
+			var sy: float = 1.0 if flip_y == 0.0 else -1.0
+			canvas.draw_line(base, base + Vector2(sx * corner, 0), bracket_color, 2.8)
+			canvas.draw_line(base, base + Vector2(0, sy * corner), bracket_color, 2.8)
 	canvas.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.20, 0.86, 0.73, 0.85), false, 2.0)
 	if expanded:
 		var font: Font = ThemeDB.fallback_font
