@@ -106,4 +106,4 @@ text = "ULANGI SKENARIO"
 [node name="BtnMenu" type="Button" parent="CenterPanel/VBox"]
 custom_minimum_size = Vector2(0, 38)
 layout_mode = 2
-text = "KEMBALI KE MENU UTAMA"
+text = "AKHIRI MISI & LIHAT EVALUASI"
