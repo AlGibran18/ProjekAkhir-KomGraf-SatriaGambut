@@ -6,6 +6,7 @@ extends Node3D
 var tracked_player: Node3D
 var world_view: SimulationView3D
 var rain_particles: GPUParticles3D
+var ground_splashes: GPUParticles3D
 var foliage: Array[Node3D] = []
 var foliage_phase: Array[float] = []
 var foliage_initial_rotations: Array[Vector3] = []
@@ -22,6 +23,7 @@ func initialize(player: Node3D, view: SimulationView3D) -> void:
 
 func _ready() -> void:
 	_create_rain()
+	_create_ground_splashes()
 	_collect_foliage()
 	if world_view != null and world_view.sun_light != null:
 		sun_default_energy = world_view.sun_light.light_energy
@@ -34,12 +36,15 @@ func _process(delta: float) -> void:
 		return
 	if GameState.current_phase != ToolEnums.GamePhase.ACTIVE_FPS:
 		rain_particles.emitting = false
+		ground_splashes.emitting = false
 		return
 	ambient_clock += delta
 	var rain_target: float = clampf(GameState.global_rainfall_rate / 9.0, 0.0, 1.0)
 	rain_fraction = move_toward(rain_fraction, rain_target, delta * 0.35)
 	rain_particles.global_position = tracked_player.global_position + Vector3(0.0, 6.0, 0.0)
 	rain_particles.emitting = rain_fraction > 0.08
+	ground_splashes.global_position = Vector3(tracked_player.global_position.x, 0.15, tracked_player.global_position.z)
+	ground_splashes.emitting = rain_fraction > 0.12
 	var wind: Vector2 = GameState.wind_direction * clampf(GameState.wind_speed_kmh / 15.0, 0.2, 2.5)
 	var process_mat: ParticleProcessMaterial = rain_particles.process_material as ParticleProcessMaterial
 	if process_mat != null:
@@ -85,6 +90,38 @@ func _create_rain() -> void:
 # Collect ALL eligible small plants, not just the first 80 grid cells.
 # IMPORTANT: animate each living plant, never PlantHolder as it may also
 # contain rigid rocks, logs, and stumps.
+# Short, lightweight particles suggest small droplet impacts on wet peat.
+# Collision-free particles avoid interacting with the fire simulation.
+func _create_ground_splashes() -> void:
+	ground_splashes = GPUParticles3D.new()
+	ground_splashes.name = "RaindropGroundSplashes"
+	ground_splashes.amount = 180
+	ground_splashes.lifetime = 0.37
+	ground_splashes.emitting = false
+	ground_splashes.visibility_aabb = AABB(Vector3(-9.0, -1.0, -9.0), Vector3(18.0, 4.0, 18.0))
+	var material: ParticleProcessMaterial = ParticleProcessMaterial.new()
+	material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	material.emission_box_extents = Vector3(7.2, 0.04, 7.2)
+	material.direction = Vector3.UP
+	material.spread = 55.0
+	material.initial_velocity_min = 0.35
+	material.initial_velocity_max = 1.3
+	material.gravity = Vector3(0.0, -7.0, 0.0)
+	material.scale_min = 0.35
+	material.scale_max = 1.0
+	material.color = Color(0.66, 0.82, 0.95, 0.38)
+	ground_splashes.process_material = material
+	var mesh: QuadMesh = QuadMesh.new()
+	mesh.size = Vector2(0.06, 0.08)
+	var splash_material: StandardMaterial3D = StandardMaterial3D.new()
+	splash_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	splash_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	splash_material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	splash_material.albedo_color = Color(0.67, 0.84, 0.96, 0.45)
+	mesh.material = splash_material
+	ground_splashes.draw_pass_1 = mesh
+	add_child(ground_splashes)
+
 func _collect_foliage() -> void:
 	foliage.clear()
 	foliage_phase.clear()
@@ -140,3 +177,5 @@ func _update_quality(quality: int) -> void:
 		return
 	var quality_ratio: Array[float] = [0.18, 0.55, 1.0]
 	rain_particles.amount_ratio = quality_ratio[clampi(quality, 0, 2)] * rain_fraction
+	if ground_splashes != null:
+		ground_splashes.amount_ratio = quality_ratio[clampi(quality, 0, 2)] * rain_fraction
