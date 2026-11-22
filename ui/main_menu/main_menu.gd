@@ -20,6 +20,9 @@ extends Control
 @onready var vol_slider: HSlider = $SettingsModal/VBox/VolSlider
 
 var display_option: OptionButton
+var wardrobe_dialog: ConfirmationDialog
+var uniform_choice: OptionButton
+var helmet_choice: OptionButton
 @onready var main_margin: MarginContainer = $MainMargin
 @onready var menu_columns: HBoxContainer = $MainMargin/MainHBox
 @onready var left_panel: PanelContainer = $MainMargin/MainHBox/LeftPanel
@@ -30,6 +33,7 @@ func _ready() -> void:
 	get_tree().paused = false
 	_populate_levels()
 	_create_display_setting()
+	_create_wardrobe()
 	_populate_settings()
 	resized.connect(_on_menu_resized)
 	call_deferred("_on_menu_resized")
@@ -172,3 +176,51 @@ func _close_modals() -> void:
 	guide_modal.visible = false
 	settings_modal.visible = false
 	credits_modal.visible = false
+
+# Character appearance is a local cosmetic preference saved between sessions.
+func _create_wardrobe() -> void:
+	var button: Button = Button.new()
+	button.name = "BtnWardrobe"
+	button.text = "KUSTOMISASI PETUGAS  [HELM & SERAGAM]"
+	button.custom_minimum_size.y = 43.0
+	var menu_box: VBoxContainer = btn_start.get_parent() as VBoxContainer
+	menu_box.add_child(button)
+	menu_box.move_child(button, btn_start.get_index() + 1)
+	button.pressed.connect(_open_wardrobe)
+	wardrobe_dialog = ConfirmationDialog.new()
+	wardrobe_dialog.title = "PERLENGKAPAN SATRIA GAMBUT"
+	wardrobe_dialog.ok_button_text = "SIMPAN PENAMPILAN"
+	wardrobe_dialog.cancel_button_text = "BATAL"
+	wardrobe_dialog.min_size = Vector2i(390, 250)
+	add_child(wardrobe_dialog)
+	var stack: VBoxContainer = VBoxContainer.new()
+	stack.add_theme_constant_override("separation", 10)
+	wardrobe_dialog.add_child(stack)
+	var info: Label = Label.new()
+	info.text = "Pilih penampilan petugas untuk kamera TPP.\nTidak memengaruhi tingkat kesulitan atau alat."
+	stack.add_child(info)
+	var uniform_label: Label = Label.new()
+	uniform_label.text = "WARNA JAKET / SERAGAM"
+	stack.add_child(uniform_label)
+	uniform_choice = OptionButton.new()
+	for name_str in GameState.UNIFORM_NAMES:
+		uniform_choice.add_item(name_str)
+	stack.add_child(uniform_choice)
+	var helmet_label: Label = Label.new()
+	helmet_label.text = "WARNA HELM"
+	stack.add_child(helmet_label)
+	helmet_choice = OptionButton.new()
+	for name_str in GameState.HELMET_NAMES:
+		helmet_choice.add_item(name_str)
+	stack.add_child(helmet_choice)
+	wardrobe_dialog.confirmed.connect(_save_wardrobe)
+
+func _open_wardrobe() -> void:
+	AudioManager.play_sfx("click")
+	uniform_choice.select(GameState.uniform_index)
+	helmet_choice.select(GameState.helmet_index)
+	wardrobe_dialog.popup_centered()
+
+func _save_wardrobe() -> void:
+	GameState.set_outfit(uniform_choice.selected, helmet_choice.selected)
+	AudioManager.play_sfx("click")
