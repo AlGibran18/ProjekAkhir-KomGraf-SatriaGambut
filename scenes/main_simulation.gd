@@ -16,6 +16,7 @@ var weather_ambience: WeatherAmbience3D
 var forest_audio: ForestAudioAmbience
 var lightning_system: StormLightning3D
 var cinematic_capture: CinematicCapture
+var mission_telemetry: MissionTelemetry
 
 func _ready() -> void:
 	grid_simulator.initialize_level(GameState.current_level_index)
@@ -48,6 +49,11 @@ func _ready() -> void:
 	cinematic_capture = CinematicCapture.new()
 	cinematic_capture.initialize(player, hud, mission_director)
 	add_child(cinematic_capture)
+
+	mission_telemetry = MissionTelemetry.new()
+	mission_telemetry.name = "MissionTelemetry"
+	mission_telemetry.initialize(grid_simulator)
+	add_child(mission_telemetry)
 
 	EventBus.game_phase_changed.connect(_on_phase_changed)
 	_on_phase_changed(GameState.current_phase)
