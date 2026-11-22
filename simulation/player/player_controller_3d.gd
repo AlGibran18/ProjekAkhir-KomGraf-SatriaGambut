@@ -134,6 +134,7 @@ func _physics_process(delta: float) -> void:
 	if firefighter_avatar != null:
 		firefighter_avatar.animate_movement(delta, is_moving, is_sprinting)
 	_update_raycast_targeting()
+	_sync_visual_tool_target()
 	_check_well_proximity(delta)
 
 	var is_acting: bool = false
@@ -214,6 +215,21 @@ func _update_raycast_targeting() -> void:
 		if current_targeted_cell != Vector2i(-1, -1):
 			current_targeted_cell = Vector2i(-1, -1)
 			EventBus.cell_hovered.emit(current_targeted_cell, null)
+
+# Both camera modes use the SAME grid cell chosen by gameplay targeting.
+# Visuals never expand range or grant an action on another cell.
+func _sync_visual_tool_target() -> void:
+	var valid: bool = current_targeted_cell != Vector2i(-1, -1)
+	var world_target: Vector3 = Vector3.ZERO
+	if valid:
+		world_target = Vector3(
+			float(current_targeted_cell.x) * GameState.CELL_SIZE, 0.08,
+			float(current_targeted_cell.y) * GameState.CELL_SIZE
+		)
+	if held_tools != null:
+		held_tools.set_aim_target(world_target, valid)
+	if firefighter_avatar != null:
+		firefighter_avatar.set_aim_target(world_target, valid)
 
 func _check_well_proximity(delta: float) -> void:
 	var near_well: bool = false
