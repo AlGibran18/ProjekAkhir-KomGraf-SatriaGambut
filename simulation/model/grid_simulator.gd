@@ -393,6 +393,7 @@ func _calculate_score() -> void:
 	GameState.mission_score = clampi(roundi(points), 0, 100)
 	GameState.mission_medal = "EMAS" if GameState.mission_score >= 85 else ("PERAK" if GameState.mission_score >= 70 else "PERUNGGU")
 	GameState.mission_notes = "Pos pengamatan aman; seluruh hotspot padam."
+	GameState.save_best_record()
 
 func get_cell_data(pos: Vector2i) -> PeatCellData:
 	return cells.get(pos, null)
