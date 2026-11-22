@@ -34,16 +34,16 @@ func _ready() -> void:
 	add_child(lightning_layer)
 	flash_rect = ColorRect.new()
 	flash_rect.name = "LightningSkyFlash"
-	flash_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	flash_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	flash_rect.color = Color(0.78, 0.87, 1.0, 0.0)
 	lightning_layer.add_child(flash_rect)
+	flash_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bolt = Control.new()
 	bolt.name = "LightningBoltOverlay"
-	bolt.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bolt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bolt.draw.connect(_draw_bolt)
 	lightning_layer.add_child(bolt)
+	bolt.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	lightning_layer.visible = false
 
 func _unhandled_input(event: InputEvent) -> void:
