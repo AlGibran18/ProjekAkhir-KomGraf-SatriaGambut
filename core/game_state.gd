@@ -77,6 +77,19 @@ var mission_notes: String = ""
 var last_new_record: bool = false
 const RECORDS_PATH: String = "user://satria_gambut_records.cfg"
 const DISPLAY_SETTINGS_PATH: String = "user://satria_gambut_display.cfg"
+const OUTFIT_PATH: String = "user://satria_gambut_outfit.cfg"
+const UNIFORM_NAMES: Array[String] = ["Merah Rescue", "Oranye Satgas", "Hijau Rimba", "Biru Operasi"]
+const UNIFORM_COLORS: Array[Color] = [
+	Color(0.77, 0.12, 0.10), Color(0.96, 0.38, 0.07),
+	Color(0.15, 0.39, 0.25), Color(0.13, 0.34, 0.68)
+]
+const HELMET_NAMES: Array[String] = ["Merah Rescue", "Kuning Safety", "Hitam Taktis", "Putih Komando"]
+const HELMET_COLORS: Array[Color] = [
+	Color(0.86, 0.12, 0.13), Color(1.0, 0.72, 0.12),
+	Color(0.08, 0.12, 0.13), Color(0.90, 0.93, 0.90)
+]
+var uniform_index: int = 0
+var helmet_index: int = 1
 var fullscreen_enabled: bool = false
 var _display_initialized: bool = false
 var max_wells_allowed: int = 2
@@ -99,6 +112,7 @@ func _ready() -> void:
 	EventBus.thermal_mode_toggled.connect(_on_thermal_mode_toggled)
 	load_level_config(0)
 	_load_display_settings()
+	_load_outfit()
 
 func load_level_config(level_idx: int) -> void:
 	current_level_index = clampi(level_idx, 0, LEVEL_CONFIGS.size() - 1)
@@ -283,3 +297,21 @@ func set_master_volume(vol: float) -> void:
 	master_volume = clampf(vol, 0.0, 1.0)
 	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(0.0001, master_volume)))
 	AudioServer.set_bus_mute(0, master_volume <= 0.001)
+
+# Outfits persist independently of the mission and do not alter gameplay stats.
+func set_outfit(uniform_id: int, helmet_id: int) -> void:
+	uniform_index = clampi(uniform_id, 0, UNIFORM_NAMES.size() - 1)
+	helmet_index = clampi(helmet_id, 0, HELMET_NAMES.size() - 1)
+	var config: ConfigFile = ConfigFile.new()
+	config.set_value("outfit", "uniform", uniform_index)
+	config.set_value("outfit", "helmet", helmet_index)
+	var result: Error = config.save(OUTFIT_PATH)
+	if result != OK:
+		push_warning("Kustomisasi karakter tidak tersimpan: %d" % int(result))
+
+func _load_outfit() -> void:
+	var config: ConfigFile = ConfigFile.new()
+	if config.load(OUTFIT_PATH) != OK:
+		return
+	uniform_index = clampi(int(config.get_value("outfit", "uniform", 0)), 0, UNIFORM_NAMES.size() - 1)
+	helmet_index = clampi(int(config.get_value("outfit", "helmet", 1)), 0, HELMET_NAMES.size() - 1)
