@@ -14,6 +14,7 @@ var door_hinge: Node3D
 var door_tween: Tween
 var door_open: bool = false
 var door_target_player: Node3D
+var doorway_blocker: CollisionShape3D
 
 func _ready() -> void:
 	wall = _material(Color(0.38, 0.43, 0.37))
@@ -39,6 +40,7 @@ func _build_outpost() -> void:
 	# Hinged 2.1 m door with a real collision box. Opens toward the west wall
 	# before the player reaches it, keeping the center of the entrance clear.
 	_create_animated_door()
+	_create_doorway_blocker()
 	_solid("Roof", Vector3(0, 3.27, 0), Vector3(7.80, 0.26, 7.90), roof_mat)
 	_visual("RoofRidge", Vector3(0, 3.45, 0), Vector3(0.32, 0.20, 8.0), accent)
 	for side_x in [-3.42, 3.42]:
@@ -121,6 +123,28 @@ func _create_animated_door() -> void:
 	# Small outer sign to communicate that this entrance opens automatically.
 	_sign("PINTU OTOMATIS", Vector3(0, 2.49, -3.77), 16)
 
+# Dedicated physical gate: an unfinished opening animation cannot be walked through.
+func _create_doorway_blocker() -> void:
+	var gate: StaticBody3D = StaticBody3D.new()
+	gate.name = "ClosedDoorwayGate"
+	gate.collision_layer = 1
+	gate.collision_mask = 1
+	gate.position = Vector3(0.0, 1.12, -3.48)
+	add_child(gate)
+	doorway_blocker = CollisionShape3D.new()
+	doorway_blocker.name = "GateCollision"
+	var shape: BoxShape3D = BoxShape3D.new()
+	shape.size = Vector3(2.04, 2.24, 0.16)
+	doorway_blocker.shape = shape
+	doorway_blocker.disabled = false
+	gate.add_child(doorway_blocker)
+
+func _player_is_inside_outpost() -> bool:
+	if door_target_player == null:
+		return false
+	var relative: Vector3 = to_local(door_target_player.global_position)
+	return absf(relative.x) < 3.30 and relative.z > -3.40 and relative.z < 3.35
+
 func _physics_process(_delta: float) -> void:
 	if door_hinge == null or GameState.current_phase != ToolEnums.GamePhase.ACTIVE_FPS:
 		return
@@ -132,7 +156,7 @@ func _physics_process(_delta: float) -> void:
 	# Hysteresis stops jitter and prevents the door closing on the player.
 	if not door_open and distance <= 4.2:
 		_set_door_open(true)
-	elif door_open and distance >= 6.3:
+	elif door_open and distance >= 6.3 and not _player_is_inside_outpost():
 		_set_door_open(false)
 
 func _set_door_open(open: bool) -> void:
@@ -144,8 +168,14 @@ func _set_door_open(open: bool) -> void:
 	door_tween = create_tween()
 	door_tween.set_trans(Tween.TRANS_CUBIC)
 	door_tween.set_ease(Tween.EASE_IN_OUT)
-	# Closed = 0; open ≈ 100 degrees into the room, clear of the outward approach.
+	# Restore collision before closing; remove it only after the opening finishes.
+	if not open and doorway_blocker != null:
+		doorway_blocker.set_deferred("disabled", false)
 	door_tween.tween_property(door_hinge, "rotation:y", deg_to_rad(-100.0) if open else 0.0, 0.85)
+	door_tween.tween_callback(func() -> void:
+		if doorway_blocker != null and door_open == open:
+			doorway_blocker.set_deferred("disabled", open)
+	)
 
 func _material(color: Color) -> Material:
 	var m: StandardMaterial3D = StandardMaterial3D.new()
