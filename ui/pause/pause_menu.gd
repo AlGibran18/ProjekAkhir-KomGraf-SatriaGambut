@@ -11,6 +11,9 @@ extends Control
 
 var resume_callback: Callable
 var stop_confirmation: ConfirmationDialog
+var outfit_dialog: ConfirmationDialog
+var outfit_suit: OptionButton
+var outfit_helmet: OptionButton
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -24,6 +27,7 @@ func _ready() -> void:
 	btn_restart.pressed.connect(_on_restart_pressed)
 	btn_menu.pressed.connect(_on_stop_requested)
 	_create_stop_confirmation()
+	_create_pause_wardrobe()
 	EventBus.game_phase_changed.connect(_on_phase_changed)
 
 func set_resume_callback(cb: Callable) -> void:
@@ -31,6 +35,8 @@ func set_resume_callback(cb: Callable) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
+		return
+	if (outfit_dialog != null and outfit_dialog.visible) or (stop_confirmation != null and stop_confirmation.visible):
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
 		_on_resume_pressed()
@@ -101,3 +107,48 @@ func _on_stop_confirmed() -> void:
 	GameState.last_new_record = false
 	GameState.mission_notes = "Operasi dihentikan sukarela. Statistik merupakan hasil sementara; hotspot masih aktif."
 	GameState.set_game_phase(ToolEnums.GamePhase.ABORTED)
+
+# Wardrobe is accessible during a paused mission and updates the TPP avatar
+# immediately; it doesn't restart the level or spend resources.
+func _create_pause_wardrobe() -> void:
+	var button: Button = Button.new()
+	button.name = "BtnOutfit"
+	button.text = "GANTI HELM & SERAGAM"
+	button.custom_minimum_size.y = 39.0
+	var box: VBoxContainer = btn_resume.get_parent() as VBoxContainer
+	box.add_child(button)
+	box.move_child(button, btn_resume.get_index() + 1)
+	button.pressed.connect(_open_pause_wardrobe)
+	outfit_dialog = ConfirmationDialog.new()
+	outfit_dialog.title = "KOSTUM PETUGAS"
+	outfit_dialog.ok_button_text = "PAKAI KOSTUM"
+	outfit_dialog.cancel_button_text = "BATAL"
+	outfit_dialog.min_size = Vector2i(375, 240)
+	add_child(outfit_dialog)
+	var content: VBoxContainer = VBoxContainer.new()
+	content.add_theme_constant_override("separation", 9)
+	outfit_dialog.add_child(content)
+	var suit_label: Label = Label.new()
+	suit_label.text = "JAKET / SERAGAM"
+	content.add_child(suit_label)
+	outfit_suit = OptionButton.new()
+	for title in GameState.UNIFORM_NAMES:
+		outfit_suit.add_item(title)
+	content.add_child(outfit_suit)
+	var helmet_label: Label = Label.new()
+	helmet_label.text = "HELM"
+	content.add_child(helmet_label)
+	outfit_helmet = OptionButton.new()
+	for title in GameState.HELMET_NAMES:
+		outfit_helmet.add_item(title)
+	content.add_child(outfit_helmet)
+	outfit_dialog.confirmed.connect(_apply_pause_wardrobe)
+
+func _open_pause_wardrobe() -> void:
+	outfit_suit.select(GameState.uniform_index)
+	outfit_helmet.select(GameState.helmet_index)
+	outfit_dialog.popup_centered()
+
+func _apply_pause_wardrobe() -> void:
+	GameState.set_outfit(outfit_suit.selected, outfit_helmet.selected)
+	AudioManager.play_sfx("click")
