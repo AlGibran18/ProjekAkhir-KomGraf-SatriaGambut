@@ -26,7 +26,7 @@ func _ready() -> void:
 	planning_overlay.setup_planning(grid_simulator)
 	pause_menu.set_resume_callback(func() -> void: player.activate_fps_camera())
 	mission_director = MissionDirector.new()
-	mission_director.initialize(grid_simulator)
+	mission_director.initialize(grid_simulator, player)
 	add_child(mission_director)
 
 	EventBus.game_phase_changed.connect(_on_phase_changed)
