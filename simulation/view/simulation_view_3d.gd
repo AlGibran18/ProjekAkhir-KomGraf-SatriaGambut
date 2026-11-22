@@ -80,6 +80,7 @@ func setup_view(simulator: GridSimulator) -> void:
 	_init_forest_vegetation(simulator.grid_width, simulator.grid_height)
 	_init_border_forest(simulator.grid_width, simulator.grid_height)
 	_init_posko_and_fences(simulator.grid_width, simulator.grid_height)
+	_create_enterable_outpost()
 	_refresh_all_visuals()
 
 func activate_planning_camera() -> void:
@@ -347,7 +348,7 @@ func _init_posko_and_fences(width: int, height: int) -> void:
 
 	var sign_a: Node3D = kenney_sign_scene.instantiate() as Node3D
 	sign_a.scale = Vector3(2.8, 2.8, 2.8)
-	sign_a.position = Vector3(7.1 * cell_sz, 0.0, 1.8 * cell_sz)
+	sign_a.position = Vector3(6.2 * cell_sz, 0.0, 1.35 * cell_sz)
 	sign_a.rotation.y = PI
 	props_container.add_child(sign_a)
 
@@ -374,6 +375,25 @@ func _init_posko_and_fences(width: int, height: int) -> void:
 		fn_right.rotation.y = -PI * 0.5
 		fn_right.position = Vector3(float(width) * cell_sz - cell_sz * 0.05, 0.0, float(y) * cell_sz)
 		props_container.add_child(fn_right)
+
+func _create_enterable_outpost() -> void:
+	# Place immediately behind the observation station, preserving the
+	# original player spawn at z=3 and opening a walkable north-side entrance.
+	for y in range(2, 5):
+		for x in range(7, 10):
+			var pos: Vector2i = Vector2i(x, y)
+			if not cell_visual_nodes.has(pos):
+				continue
+			var holder: Node3D = cell_visual_nodes[pos]
+			for child_name in ["TreeHolder", "PlantHolder"]:
+				var group: Node3D = holder.get_node_or_null(child_name) as Node3D
+				if group != null:
+					group.visible = false
+					group.process_mode = Node.PROCESS_MODE_DISABLED
+	var outpost: EnterableOutpost3D = EnterableOutpost3D.new()
+	outpost.name = "PoskoOperasiMasuk"
+	outpost.position = Vector3(8.0 * GameState.CELL_SIZE, 0.0, 8.2)
+	props_container.add_child(outpost)
 
 func _refresh_all_visuals() -> void:
 	if grid_simulator == null or multi_mesh_instance.multimesh == null:
