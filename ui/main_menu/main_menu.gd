@@ -20,6 +20,7 @@ extends Control
 @onready var vol_slider: HSlider = $SettingsModal/VBox/VolSlider
 
 var display_option: OptionButton
+var guide_display_checkbox: CheckBox
 var wardrobe_dialog: ConfirmationDialog
 var uniform_choice: OptionButton
 var helmet_choice: OptionButton
@@ -34,6 +35,7 @@ func _ready() -> void:
 	get_tree().paused = false
 	_populate_levels()
 	_create_display_setting()
+	_create_guide_display_setting()
 	_create_wardrobe()
 	_populate_settings()
 	resized.connect(_on_menu_resized)
@@ -93,6 +95,8 @@ func _populate_settings() -> void:
 	quality_option.select(int(GameState.current_graphics_quality))
 	if display_option != null:
 		display_option.select(1 if GameState.fullscreen_enabled else 0)
+	if guide_display_checkbox != null:
+		guide_display_checkbox.button_pressed = GameState.show_world_guide_arrow
 	sens_slider.value = GameState.mouse_sensitivity * 1000.0
 	vol_slider.value = GameState.master_volume * 100.0
 
@@ -141,6 +145,18 @@ func _create_display_setting() -> void:
 	settings_box.add_child(display_option)
 	settings_box.move_child(display_option, insertion_index + 1)
 	display_option.item_selected.connect(_on_display_mode_selected)
+
+func _create_guide_display_setting() -> void:
+	guide_display_checkbox = CheckBox.new()
+	guide_display_checkbox.name = "ShowNavigationArrow"
+	guide_display_checkbox.text = "Tampilkan panah panduan di depan pemain (FPS/TPP)"
+	guide_display_checkbox.tooltip_text = "Penanda pada radar tetap ada walau panah depan dimatikan."
+	guide_display_checkbox.button_pressed = GameState.show_world_guide_arrow
+	var settings_box: VBoxContainer = $SettingsModal/VBox
+	var close_button: Control = $SettingsModal/VBox/BtnCloseSettings
+	settings_box.add_child(guide_display_checkbox)
+	settings_box.move_child(guide_display_checkbox, close_button.get_index())
+	guide_display_checkbox.toggled.connect(GameState.set_world_guide_arrow_visible)
 
 func _on_display_mode_selected(index: int) -> void:
 	AudioManager.play_sfx("click")
