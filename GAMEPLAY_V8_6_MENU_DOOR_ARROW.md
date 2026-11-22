@@ -89,3 +89,31 @@ Base: `feature/modern-hud-smart-navigation-v8-5` (user-confirmed working after t
 - Door proximity checks the single main player node; no NPC door access is implemented.
 - The triangle is a flat mesh (double-sided shading), not a 3D extruded sculpted arrowhead.
 - Source-level static checks passed, but **Godot editor/parser and Windows gameplay runtime tests are unavailable here**. Keep PR as draft until verified locally.
+
+
+## V8.6 cinematic main menu (latest visual extension)
+
+**Reference:** the user's game-menu screenshot and the newly drafted Satria Gambut cinematic concept. The result is a Godot-native, offline menu, not a direct screenshot overlay.
+
+### Implementation
+- New original procedural vector artwork `ui/main_menu/cinematic_peatland_bg.svg`: dusk peat forest, smoky sky, wetland, burning patches, ranger watchtower, rescue-person silhouette, depth layers and vignette.
+- New `ui/main_menu/cinematic_main_menu.gd` places the original JPG Satria Gambut logo into a framed focal area, adds a large title and subtitle, and creates cinematic left-side operation buttons with selected/hover styling.
+- Right-side `ScenarioIntelCard` reuses the **same real LevelOption and LevelDescLabel scene nodes**, with a preview thumbnail and live weather briefing.
+- All seven menu actions are preserved: Start, Select Scenario, Guide/SOP, Wardrobe, Settings, Credits, Quit. Guide/Settings/Credits/Wardrobe retain their previous dialogs and existing callbacks.
+- Cinematic menu is placed behind the existing modal backdrop, so settings and guidance screens still open as before.
+- The original `assets/textures/satria_gambut_logo.jpg` file is **unchanged**. It is re-presented with a premium spotlight frame and additional title typography.
+- UI scales as a 1280×720 reference stage and centers within larger/smaller windows, with a full-viewport illustration background.
+- No copyrighted Horizon artwork, logo, or title screen is bundled. This is original Satria Gambut artwork inspired by the general cinematic menu atmosphere.
+
+### Cinematic menu checklist
+1. [ ] Import branch into Godot; inspect the debugger for new `CinematicMainMenu` or SVG texture errors.
+2. [ ] Start project: see full-screen forest cinematic background; original Satria Gambut logo and prominent game title at top.
+3. [ ] All seven operation menu entries appear on the left, first entry highlighted; hover changes selection.
+4. [ ] Select scenario from card at right; the level information updates and **Mulai Operasi** launches the level selected.
+5. [ ] Open/close Guide/SOP, Settings, Credits and Wardrobe; saved values remain intact.
+6. [ ] Verify mouse navigation and keyboard up/down/Enter/Esc; F11 fullscreen continues to work.
+7. [ ] Test 1280×720, window maximize, fullscreen and return from simulation to menu.
+8. [ ] Ensure SVG artwork imported correctly on Godot 4.7.2 GL Compatibility. If it fails to import on the user's PC, inspect import log and keep the old menu version safe.
+9. [ ] Check the latest automatic safe posko door still opens and holds open when the player is in/near the station.
+
+**Runtime status:** Source-level checks passed; Godot editor/runtime tests were not possible in the authoring environment.
