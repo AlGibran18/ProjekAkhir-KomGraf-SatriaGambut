@@ -26,12 +26,11 @@ var target_cursor_pos: Vector3 = Vector3.ZERO
 var camera_tween: Tween
 
 var healthy_trees: Array[PackedScene] = [
-	preload("res://assets/models/nature/glTF/CommonTree_1.gltf"),
 	preload("res://assets/models/nature/glTF/CommonTree_2.gltf"),
 	preload("res://assets/models/nature/glTF/CommonTree_3.gltf"),
-	preload("res://assets/models/nature/glTF/Pine_1.gltf"),
-	preload("res://assets/models/nature/glTF/Pine_2.gltf"),
-	preload("res://assets/models/nature/glTF/Pine_3.gltf")
+	preload("res://assets/models/nature/glTF/CommonTree_4.gltf"),
+	preload("res://assets/models/nature/glTF/Pine_3.gltf"),
+	preload("res://assets/models/nature/glTF/Pine_4.gltf")
 ]
 var dead_trees: Array[PackedScene] = [
 	preload("res://assets/models/nature/glTF/DeadTree_1.gltf"),
@@ -214,11 +213,12 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 			var in_spawn_zone: bool = (x >= (width / 2) - 2 and x <= (width / 2) + 2 and y <= 2)
 			if not in_spawn_zone:
 				var q1_pos: Vector3 = Vector3(-0.78 + (rand_b - 0.5) * 0.25, 0.0, -0.78 + (rand_a - 0.5) * 0.25)
-				if rand_a > 0.28:
+				if rand_a > 0.36:
 					var tree_idx: int = int(rand_b * float(healthy_trees.size())) % healthy_trees.size()
 					var tree_instance: Node3D = healthy_trees[tree_idx].instantiate() as Node3D
-					var tree_scale: float = 0.85 + (rand_a * 0.30)
-					tree_instance.scale = Vector3(tree_scale, tree_scale, tree_scale)
+					var scale_xz: float = 1.10 + (rand_a * 0.25)
+					var scale_y: float = 1.55 + (rand_a * 0.35)
+					tree_instance.scale = Vector3(scale_xz, scale_y, scale_xz)
 					tree_instance.rotation.y = rand_b * TAU
 					tree_instance.position = q1_pos
 					tree_holder.add_child(tree_instance)
@@ -310,8 +310,9 @@ func _init_border_forest(width: int, height: int) -> void:
 			if rand_val > 0.35:
 				var tree_idx: int = int(rand_val * float(healthy_trees.size())) % healthy_trees.size()
 				var tree_inst: Node3D = healthy_trees[tree_idx].instantiate() as Node3D
-				var s: float = 0.95 + (rand_val * 0.35)
-				tree_inst.scale = Vector3(s, s, s)
+				var scale_xz: float = 1.15 + (rand_val * 0.30)
+				var scale_y: float = 1.65 + (rand_val * 0.40)
+				tree_inst.scale = Vector3(scale_xz, scale_y, scale_xz)
 				tree_inst.rotation.y = rand_val * TAU
 				tree_inst.position = Vector3(float(x) * cell_sz, 0.0, float(y) * cell_sz)
 				border_forest_container.add_child(tree_inst)
@@ -548,7 +549,7 @@ func _update_cell_visual(pos: Vector2i, cell: PeatCellData) -> void:
 							var tw_d: Tween = create_tween()
 							tw_d.set_trans(Tween.TRANS_QUAD)
 							tw_d.set_ease(Tween.EASE_OUT)
-							tw_d.tween_property(dead_inst, "scale", Vector3(0.80, 0.80, 0.80), 0.24)
+							tw_d.tween_property(dead_inst, "scale", Vector3(1.05, 1.30, 1.05), 0.24)
 			if plant_holder != null:
 				plant_holder.visible = not cell.is_burnt
 
