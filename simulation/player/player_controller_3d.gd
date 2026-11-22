@@ -58,9 +58,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				grid_simulator.cancel_injection()
 			GameState.set_game_phase(ToolEnums.GamePhase.PAUSED)
 		elif event.keycode == KEY_E and was_near_well:
-			if _refill_nearby_well(GameState.max_water_capacity) / 1.0 > 0.0:
+			if _refill_nearby_well(GameState.max_water_capacity) > 0.0:
 				AudioManager.play_sfx("refill", -3.0)
-				EventBus.educational_toast.emit("Tangki air terisi penuh!", false)
+				EventBus.educational_toast.emit("Air berhasil ditransfer dari sumur!", false)
 
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
