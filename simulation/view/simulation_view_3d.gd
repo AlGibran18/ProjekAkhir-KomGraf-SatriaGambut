@@ -242,6 +242,7 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 						fern_inst.scale = Vector3(fs, fs, fs)
 						fern_inst.position = q2_pos
 						fern_inst.rotation.y = rand_a * TAU
+						fern_inst.name = "WindPlant_Fern"
 						plant_holder.add_child(fern_inst)
 					else:
 						var pbig_inst: Node3D = plant_big_scene.instantiate() as Node3D
@@ -249,6 +250,7 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 						pbig_inst.scale = Vector3(ps, ps, ps)
 						pbig_inst.position = q2_pos
 						pbig_inst.rotation.y = rand_b * TAU
+						pbig_inst.name = "WindPlant_Broadleaf"
 						plant_holder.add_child(pbig_inst)
 
 				var q3_pos: Vector3 = Vector3(-0.75 + (rand_b - 0.5) * 0.22, 0.0, 0.82 + (rand_a - 0.5) * 0.22)
@@ -271,6 +273,7 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 						bush_inst.scale = Vector3(bs, bs, bs)
 						bush_inst.position = q3_pos
 						bush_inst.rotation.y = rand_b * TAU
+						bush_inst.name = "WindPlant_Bush"
 						plant_holder.add_child(bush_inst)
 
 				var q4_pos: Vector3 = Vector3(0.78 + (rand_a - 0.5) * 0.22, 0.0, 0.78 + (rand_b - 0.5) * 0.22)
@@ -295,6 +298,7 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 						grass_inst.scale = Vector3(gs, gs, gs)
 						grass_inst.position = q4_pos
 						grass_inst.rotation.y = rand_a * PI
+						grass_inst.name = "WindPlant_Grass"
 						plant_holder.add_child(grass_inst)
 
 			cell_visual_nodes[pos] = cell_holder
