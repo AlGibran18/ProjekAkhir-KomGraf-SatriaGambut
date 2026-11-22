@@ -29,6 +29,7 @@ var helmet_choice: OptionButton
 @onready var logo_texture: TextureRect = $MainMargin/MainHBox/RightPanel/VBox/LogoTexture
 
 func _ready() -> void:
+	AudioManager.play_menu_music()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().paused = false
 	_populate_levels()
