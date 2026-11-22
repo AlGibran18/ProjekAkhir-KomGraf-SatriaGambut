@@ -14,6 +14,7 @@ var stop_confirmation: ConfirmationDialog
 var outfit_dialog: ConfirmationDialog
 var outfit_suit: OptionButton
 var outfit_helmet: OptionButton
+var guide_display_checkbox: CheckBox
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -28,6 +29,7 @@ func _ready() -> void:
 	btn_menu.pressed.connect(_on_stop_requested)
 	_create_stop_confirmation()
 	_create_pause_wardrobe()
+	_create_guide_checkbox()
 	EventBus.game_phase_changed.connect(_on_phase_changed)
 
 func set_resume_callback(cb: Callable) -> void:
@@ -50,6 +52,8 @@ func _sync_controls() -> void:
 	quality_option.select(int(GameState.current_graphics_quality))
 	sens_slider.value = GameState.mouse_sensitivity * 1000.0
 	vol_slider.value = GameState.master_volume * 100.0
+	if guide_display_checkbox != null:
+		guide_display_checkbox.button_pressed = GameState.show_world_guide_arrow
 
 func _on_phase_changed(new_phase: ToolEnums.GamePhase) -> void:
 	var is_paused: bool = (new_phase == ToolEnums.GamePhase.PAUSED)
@@ -152,3 +156,13 @@ func _open_pause_wardrobe() -> void:
 func _apply_pause_wardrobe() -> void:
 	GameState.set_outfit(outfit_suit.selected, outfit_helmet.selected)
 	AudioManager.play_sfx("click")
+
+func _create_guide_checkbox() -> void:
+	guide_display_checkbox = CheckBox.new()
+	guide_display_checkbox.text = "Panah navigasi depan pemain (FPS/TPP)"
+	guide_display_checkbox.tooltip_text = "Bisa disembunyikan tanpa menghilangkan penunjuk peta."
+	guide_display_checkbox.button_pressed = GameState.show_world_guide_arrow
+	var box: VBoxContainer = btn_resume.get_parent() as VBoxContainer
+	box.add_child(guide_display_checkbox)
+	box.move_child(guide_display_checkbox, btn_resume.get_index())
+	guide_display_checkbox.toggled.connect(GameState.set_world_guide_arrow_visible)
