@@ -11,6 +11,7 @@ extends Node3D
 @onready var pause_menu: PauseMenu = $UILayer/PauseMenu
 
 var has_transitioned_from_planning: bool = false
+var mission_director: MissionDirector
 
 func _ready() -> void:
 	grid_simulator.initialize_level(GameState.current_level_index)
@@ -24,6 +25,9 @@ func _ready() -> void:
 	hud.setup_hud(grid_simulator, player)
 	planning_overlay.setup_planning(grid_simulator)
 	pause_menu.set_resume_callback(func() -> void: player.activate_fps_camera())
+	mission_director = MissionDirector.new()
+	mission_director.initialize(grid_simulator)
+	add_child(mission_director)
 
 	EventBus.game_phase_changed.connect(_on_phase_changed)
 	_on_phase_changed(GameState.current_phase)
