@@ -1,0 +1,137 @@
+[gd_scene load_steps=14 format=3 uid="uid://ca9k5m3p7x2we"]
+
+[ext_resource type="Script" path="res://simulation/player/held_tools_3d.gd" id="1_held"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wood"]
+albedo_color = Color(0.45, 0.28, 0.14, 1)
+roughness = 0.8
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_handle"]
+material = SubResource("StandardMaterial3D_wood")
+top_radius = 0.018
+bottom_radius = 0.018
+height = 0.72
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_steel"]
+albedo_color = Color(0.65, 0.68, 0.72, 1)
+metallic = 0.6
+roughness = 0.35
+
+[sub_resource type="BoxMesh" id="BoxMesh_blade"]
+material = SubResource("StandardMaterial3D_steel")
+size = Vector3(0.16, 0.02, 0.22)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rubber"]
+albedo_color = Color(0.12, 0.13, 0.15, 1)
+roughness = 0.7
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_hose"]
+material = SubResource("StandardMaterial3D_rubber")
+top_radius = 0.025
+bottom_radius = 0.028
+height = 0.4
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nozzle_red"]
+albedo_color = Color(0.85, 0.18, 0.15, 1)
+roughness = 0.4
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_nozzle_tip"]
+material = SubResource("StandardMaterial3D_nozzle_red")
+top_radius = 0.016
+bottom_radius = 0.032
+height = 0.16
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_water"]
+emission_shape = 1
+emission_sphere_radius = 0.02
+direction = Vector3(0, 0, -1)
+spread = 6.0
+initial_velocity_min = 9.0
+initial_velocity_max = 12.0
+gravity = Vector3(0, -4.5, 0)
+scale_min = 0.7
+scale_max = 1.3
+color = Color(0.45, 0.85, 1, 0.85)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_water_drop"]
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.5, 0.88, 1, 0.85)
+billboard_mode = 3
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+[sub_resource type="QuadMesh" id="QuadMesh_water"]
+material = SubResource("StandardMaterial3D_water_drop")
+size = Vector2(0.1, 0.1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pressure_blue"]
+shading_mode = 0
+albedo_color = Color(0.2, 0.75, 1, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_spear_shaft"]
+material = SubResource("StandardMaterial3D_steel")
+top_radius = 0.016
+bottom_radius = 0.022
+height = 1.05
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_spear_t"]
+material = SubResource("StandardMaterial3D_nozzle_red")
+top_radius = 0.018
+bottom_radius = 0.018
+height = 0.24
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_spear_tip"]
+material = SubResource("StandardMaterial3D_pressure_blue")
+top_radius = 0.024
+bottom_radius = 0.024
+height = 0.18
+
+[node name="HeldTools3D" type="Node3D"]
+script = ExtResource("1_held")
+
+[node name="ShovelModel" type="Node3D" parent="."]
+visible = false
+
+[node name="Handle" type="MeshInstance3D" parent="ShovelModel"]
+transform = Transform3D(1, 0, 0, 0, 0.766044, -0.642788, 0, 0.642788, 0.766044, 0, 0, 0)
+mesh = SubResource("CylinderMesh_handle")
+
+[node name="Blade" type="MeshInstance3D" parent="ShovelModel"]
+transform = Transform3D(1, 0, 0, 0, 0.766044, -0.642788, 0, 0.642788, 0.766044, 0, -0.25, -0.3)
+mesh = SubResource("BoxMesh_blade")
+
+[node name="NozzleModel" type="Node3D" parent="."]
+
+[node name="Hose" type="MeshInstance3D" parent="NozzleModel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0.1)
+mesh = SubResource("CylinderMesh_hose")
+
+[node name="Tip" type="MeshInstance3D" parent="NozzleModel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, -0.18)
+mesh = SubResource("CylinderMesh_nozzle_tip")
+
+[node name="WaterJetParticles" type="GPUParticles3D" parent="NozzleModel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.27)
+emitting = false
+amount = 36
+lifetime = 0.65
+process_material = SubResource("ParticleProcessMaterial_water")
+draw_pass_1 = SubResource("QuadMesh_water")
+
+[node name="PeatSpearModel" type="Node3D" parent="."]
+visible = false
+
+[node name="SpearShaft" type="MeshInstance3D" parent="PeatSpearModel"]
+transform = Transform3D(1, 0, 0, 0, 0.866025, -0.5, 0, 0.5, 0.866025, 0, -0.05, -0.1)
+mesh = SubResource("CylinderMesh_spear_shaft")
+
+[node name="SpearHandle" type="MeshInstance3D" parent="PeatSpearModel"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.36, 0.14)
+mesh = SubResource("CylinderMesh_spear_t")
+
+[node name="PressureGauge" type="MeshInstance3D" parent="PeatSpearModel"]
+transform = Transform3D(1, 0, 0, 0, 0.866025, -0.5, 0, 0.5, 0.866025, 0, -0.36, -0.28)
+mesh = SubResource("CylinderMesh_spear_tip")

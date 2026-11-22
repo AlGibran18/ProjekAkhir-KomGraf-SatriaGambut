@@ -1,0 +1,154 @@
+[gd_scene load_steps=4 format=3 uid="uid://d6r8w2k1m5p9q"]
+
+[ext_resource type="Script" path="res://ui/planning/planning_overlay.gd" id="1_plan"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.07, 0.1, 0.12, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.25, 0.72, 0.85, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 22
+content_margin_top = 20
+content_margin_right = 22
+content_margin_bottom = 20
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sub"]
+bg_color = Color(0.11, 0.15, 0.18, 0.9)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 12
+content_margin_top = 10
+content_margin_right = 12
+content_margin_bottom = 10
+
+[node name="PlanningOverlay" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_plan")
+
+[node name="DimBg" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.03, 0.05, 0.07, 0.55)
+
+[node name="CenterPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = -275.0
+offset_right = 460.0
+offset_bottom = 275.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="HBox" type="HBoxContainer" parent="CenterPanel"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="MapPanel" type="VBoxContainer" parent="CenterPanel/HBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MapTitle" type="Label" parent="CenterPanel/HBox/MapPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "PETA TAKTIS RISIKO PFVI (Klik untuk pasang Sumur Air)"
+
+[node name="MapCanvas" type="Control" parent="CenterPanel/HBox/MapPanel"]
+custom_minimum_size = Vector2(440, 440)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Legend" type="Label" parent="CenterPanel/HBox/MapPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Hijau: Aman | Kuning: Sedang | Oranye: Tinggi | Merah: Ekstrem | Biru: Sumur Air | Kotak Cyan: Posisi Awal"
+
+[node name="InfoPanel" type="PanelContainer" parent="CenterPanel/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_sub")
+
+[node name="VBox" type="VBoxContainer" parent="CenterPanel/HBox/InfoPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="HeaderLabel" type="Label" parent="CenterPanel/HBox/InfoPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.84, 0.25, 1)
+theme_override_font_sizes/font_size = 20
+text = "1. RENCANA & ANALISIS"
+
+[node name="LevelTitleLabel" type="Label" parent="CenterPanel/HBox/InfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Level"
+autowrap_mode = 3
+
+[node name="InstructionLabel" type="Label" parent="CenterPanel/HBox/InfoPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.82, 0.88, 0.92, 1)
+theme_override_font_sizes/font_size = 13
+text = "Identifikasi zona merah (kekeringan ekstrem) di peta, lalu tempatkan Sumur Air di tepi zona rawan agar mudah isi ulang saat pemadaman!"
+autowrap_mode = 3
+
+[node name="WellCountLabel" type="Label" parent="CenterPanel/HBox/InfoPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.88, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "Sumur Air Terpasang: 0 / 2"
+
+[node name="WeatherInfoLabel" type="Label" parent="CenterPanel/HBox/InfoPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Cuaca"
+
+[node name="HoverInfoLabel" type="Label" parent="CenterPanel/HBox/InfoPanel/VBox"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.92, 0.72, 1)
+theme_override_font_sizes/font_size = 13
+text = "Arahkan mouse ke petak peta..."
+autowrap_mode = 3
+
+[node name="Spacer" type="Control" parent="CenterPanel/HBox/InfoPanel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BtnAutoWell" type="Button" parent="CenterPanel/HBox/InfoPanel/VBox"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+text = "AUTO-REKOMENDASI SUMUR"
+
+[node name="BtnStartOps" type="Button" parent="CenterPanel/HBox/InfoPanel/VBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "MULAI OPERASI PEMADAMAN ->"
+
+[node name="BtnBackMenu" type="Button" parent="CenterPanel/HBox/InfoPanel/VBox"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+text = "KEMBALI KE MENU"

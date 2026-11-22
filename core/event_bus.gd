@@ -1,0 +1,20 @@
+# core/event_bus.gd - Pusat sinyal global event-driven untuk komunikasi decoupled antar-sistem Satria Gambut.
+extends Node
+
+signal cell_state_updated(grid_pos: Vector2i, cell_data: PeatCellData)
+signal cell_hovered(grid_pos: Vector2i, cell_data: PeatCellData)
+signal cell_clicked(grid_pos: Vector2i)
+signal tool_selected(tool_type: ToolEnums.ToolType)
+signal water_changed(current_water: float, max_water: float)
+signal fire_ignited(grid_pos: Vector2i)
+signal thermal_mode_toggled(is_enabled: bool)
+signal mission_stats_updated(burned_count: int, safe_count: int, active_fires: int)
+signal game_phase_changed(new_phase: ToolEnums.GamePhase)
+signal well_placed(grid_pos: Vector2i)
+signal well_removed(grid_pos: Vector2i)
+signal educational_toast(message: String, is_warning: bool)
+signal injection_progress_changed(progress: float, is_active: bool)
+signal steam_burst_requested(grid_pos: Vector2i)
+signal tool_action_performed(tool_type: ToolEnums.ToolType, grid_pos: Vector2i)
+signal well_proximity_changed(is_near_well: bool)
+signal graphics_quality_changed(quality: int)

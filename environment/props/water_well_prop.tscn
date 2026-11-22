@@ -1,0 +1,58 @@
+[gd_scene load_steps=9 format=3 uid="uid://dw7x4n9k2p8qa"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_base"]
+albedo_color = Color(0.28, 0.3, 0.32, 1)
+roughness = 0.85
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_base"]
+material = SubResource("StandardMaterial3D_base")
+top_radius = 1.0
+bottom_radius = 1.1
+height = 0.16
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tank"]
+albedo_color = Color(0.12, 0.56, 0.92, 1)
+roughness = 0.35
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_tank"]
+material = SubResource("StandardMaterial3D_tank")
+top_radius = 0.52
+bottom_radius = 0.52
+height = 1.25
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pump"]
+albedo_color = Color(0.95, 0.42, 0.12, 1)
+roughness = 0.45
+
+[sub_resource type="BoxMesh" id="BoxMesh_pump"]
+material = SubResource("StandardMaterial3D_pump")
+size = Vector3(0.45, 0.4, 0.55)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_beacon"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.25, 0.85, 1, 0.24)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_beacon"]
+material = SubResource("StandardMaterial3D_beacon")
+top_radius = 0.08
+bottom_radius = 0.28
+height = 14.0
+
+[node name="WaterWellProp" type="Node3D"]
+
+[node name="BasePad" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
+mesh = SubResource("CylinderMesh_base")
+
+[node name="WaterTank" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2, 0.78, 0)
+mesh = SubResource("CylinderMesh_tank")
+
+[node name="PumpEngine" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.36, 0.2)
+mesh = SubResource("BoxMesh_pump")
+
+[node name="SkyBeacon" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.0, 0)
+mesh = SubResource("CylinderMesh_beacon")

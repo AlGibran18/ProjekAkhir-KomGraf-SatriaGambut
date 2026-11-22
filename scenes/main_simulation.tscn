@@ -1,0 +1,38 @@
+[gd_scene load_steps=10 format=3 uid="uid://d2k4e7fv1m0a"]
+
+[ext_resource type="Script" path="res://scenes/main_simulation.gd" id="1_main"]
+[ext_resource type="Script" path="res://simulation/model/grid_simulator.gd" id="2_grid"]
+[ext_resource type="PackedScene" uid="uid://c8q3w8kfv5e5v" path="res://simulation/view/simulation_view_3d.tscn" id="3_view"]
+[ext_resource type="PackedScene" uid="uid://c6y7e8kfv1a2b" path="res://simulation/player/player_controller_3d.tscn" id="4_player"]
+[ext_resource type="Script" path="res://tools/tool_manager.gd" id="5_tools"]
+[ext_resource type="PackedScene" uid="uid://b8y4e4kfv2e1a" path="res://ui/hud/hud.tscn" id="6_hud"]
+[ext_resource type="PackedScene" uid="uid://d6r8w2k1m5p9q" path="res://ui/planning/planning_overlay.tscn" id="7_plan"]
+[ext_resource type="PackedScene" uid="uid://d8m3q7p5w1x4k" path="res://ui/pause/pause_menu.tscn" id="8_pause"]
+[ext_resource type="PackedScene" uid="uid://ck7x4n2p9q8we" path="res://ui/evaluation/evaluation_overlay.tscn" id="9_eval"]
+
+[node name="MainSimulation" type="Node3D"]
+script = ExtResource("1_main")
+
+[node name="GridSimulator" type="Node" parent="."]
+script = ExtResource("2_grid")
+
+[node name="SimulationView3D" parent="." instance=ExtResource("3_view")]
+
+[node name="PlayerController3D" parent="." instance=ExtResource("4_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0.25, 3)
+
+[node name="ToolManager" type="Node" parent="."]
+script = ExtResource("5_tools")
+
+[node name="HUD" parent="." instance=ExtResource("6_hud")]
+
+[node name="UILayer" type="CanvasLayer" parent="."]
+layer = 2
+
+[node name="PlanningOverlay" parent="UILayer" instance=ExtResource("7_plan")]
+
+[node name="PauseMenu" parent="UILayer" instance=ExtResource("8_pause")]
+visible = false
+
+[node name="EvaluationOverlay" parent="UILayer" instance=ExtResource("9_eval")]
+visible = false

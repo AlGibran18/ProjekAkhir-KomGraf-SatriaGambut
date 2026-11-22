@@ -1,0 +1,308 @@
+[gd_scene load_steps=6 format=3 uid="uid://b8y4e4kfv2e1a"]
+
+[ext_resource type="Script" path="res://ui/hud/hud.gd" id="1_hud"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_visor"]
+bg_color = Color(0.1, 0.02, 0.02, 0.08)
+border_width_left = 10
+border_width_top = 10
+border_width_right = 10
+border_width_bottom = 10
+border_color = Color(1, 0.28, 0.15, 0.55)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.06, 0.09, 0.11, 0.84)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.45, 0.4, 0.75)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 10
+content_margin_top = 6
+content_margin_right = 10
+content_margin_bottom = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_inj"]
+bg_color = Color(0.06, 0.12, 0.18, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.25, 0.78, 1, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 10
+content_margin_top = 6
+content_margin_right = 10
+content_margin_bottom = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_well"]
+bg_color = Color(0.08, 0.25, 0.35, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.88, 1, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 12
+content_margin_top = 6
+content_margin_right = 12
+content_margin_bottom = 6
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="ThermalVisor" type="Panel" parent="."]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_visor")
+
+[node name="CenterCrosshair" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Dot" type="ColorRect" parent="CenterCrosshair"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -3.0
+offset_top = -3.0
+offset_right = 3.0
+offset_bottom = 3.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 0.85)
+
+[node name="InjectionPanel" type="PanelContainer" parent="CenterCrosshair"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -125.0
+offset_top = 24.0
+offset_right = 125.0
+offset_bottom = 78.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_inj")
+
+[node name="VBox" type="VBoxContainer" parent="CenterCrosshair/InjectionPanel"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="CenterCrosshair/InjectionPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.92, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "Injeksi Air Bertekanan Tinggi"
+horizontal_alignment = 1
+
+[node name="InjectionBar" type="ProgressBar" parent="CenterCrosshair/InjectionPanel/VBox"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+show_percentage = false
+
+[node name="RootMargin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="MainContainer" type="VBoxContainer" parent="RootMargin"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="TopRow" type="HBoxContainer" parent="RootMargin/MainContainer"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="TopLeftBox" type="VBoxContainer" parent="RootMargin/MainContainer/TopRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="TopBar" type="HBoxContainer" parent="RootMargin/MainContainer/TopRow/TopLeftBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="WaterPanel" type="PanelContainer" parent="RootMargin/MainContainer/TopRow/TopLeftBox/TopBar"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="HBox" type="HBoxContainer" parent="RootMargin/MainContainer/TopRow/TopLeftBox/TopBar/WaterPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="WaterLabel" type="Label" parent="RootMargin/MainContainer/TopRow/TopLeftBox/TopBar/WaterPanel/HBox"]
+layout_mode = 2
+text = "Air: 500 / 500 L"
+
+[node name="WaterProgressBar" type="ProgressBar" parent="RootMargin/MainContainer/TopRow/TopLeftBox/TopBar/WaterPanel/HBox"]
+custom_minimum_size = Vector2(120, 18)
+layout_mode = 2
+size_flags_vertical = 4
+max_value = 500.0
+value = 500.0
+show_percentage = false
+
+[node name="WeatherPanel" type="PanelContainer" parent="RootMargin/MainContainer/TopRow/TopLeftBox/TopBar"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="WeatherLabel" type="Label" parent="RootMargin/MainContainer/TopRow/TopLeftBox/TopBar/WeatherPanel"]
+layout_mode = 2
+text = "Suhu: 34.5°C | Angin: 14 km/h"
+
+[node name="StatsPanel" type="PanelContainer" parent="RootMargin/MainContainer/TopRow/TopLeftBox/TopBar"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="StatsLabel" type="Label" parent="RootMargin/MainContainer/TopRow/TopLeftBox/TopBar/StatsPanel"]
+layout_mode = 2
+text = "Hotspot: 2 (Bara Dalam: 0) | Aman: 99%"
+
+[node name="ToastPanel" type="PanelContainer" parent="RootMargin/MainContainer/TopRow/TopLeftBox"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="ToastLabel" type="Label" parent="RootMargin/MainContainer/TopRow/TopLeftBox/ToastPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Pesan edukasi..."
+
+[node name="WellPromptPanel" type="PanelContainer" parent="RootMargin/MainContainer/TopRow/TopLeftBox"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_well")
+
+[node name="Label" type="Label" parent="RootMargin/MainContainer/TopRow/TopLeftBox/WellPromptPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.97, 1, 1)
+text = "Dekat Sumur Air! Tangki otomatis terisi (Tekan [E] isi penuh instan)"
+
+[node name="MiniMapPanel" type="PanelContainer" parent="RootMargin/MainContainer/TopRow"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="RootMargin/MainContainer/TopRow/MiniMapPanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Title" type="Label" parent="RootMargin/MainContainer/TopRow/MiniMapPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "PETA TAKTIS (Putih=Anda, Biru=Sumur)"
+horizontal_alignment = 1
+
+[node name="MiniMapCanvas" type="Control" parent="RootMargin/MainContainer/TopRow/MiniMapPanel/VBox"]
+custom_minimum_size = Vector2(148, 148)
+layout_mode = 2
+
+[node name="Spacer" type="Control" parent="RootMargin/MainContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="HintPanel" type="PanelContainer" parent="RootMargin/MainContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="HintLabel" type="Label" parent="RootMargin/MainContainer/HintPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = " [WASD]: Gerak | [Shift]: Lari | [Spasi]: Lompat | [Klik Kiri / Tahan]: Pakai Alat | [Tab]: Thermal | [ESC]: Pause "
+
+[node name="BottomRow" type="HBoxContainer" parent="RootMargin/MainContainer"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="CellInfoPanel" type="PanelContainer" parent="RootMargin/MainContainer/BottomRow"]
+custom_minimum_size = Vector2(310, 92)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="RootMargin/MainContainer/BottomRow/CellInfoPanel"]
+layout_mode = 2
+
+[node name="CoordsLabel" type="Label" parent="RootMargin/MainContainer/BottomRow/CellInfoPanel/VBox"]
+layout_mode = 2
+text = "Arahkan crosshair ke petak..."
+
+[node name="CellStatsLabel" type="Label" parent="RootMargin/MainContainer/BottomRow/CellInfoPanel/VBox"]
+layout_mode = 2
+text = "-"
+
+[node name="RiskLabel" type="Label" parent="RootMargin/MainContainer/BottomRow/CellInfoPanel/VBox"]
+layout_mode = 2
+text = "-"
+
+[node name="SpacerBottom" type="Control" parent="RootMargin/MainContainer/BottomRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="ToolBar" type="HBoxContainer" parent="RootMargin/MainContainer/BottomRow"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BtnSekat" type="Button" parent="RootMargin/MainContainer/BottomRow/ToolBar"]
+layout_mode = 2
+toggle_mode = true
+text = "[1] Sekat Api"
+
+[node name="BtnSemprot" type="Button" parent="RootMargin/MainContainer/BottomRow/ToolBar"]
+layout_mode = 2
+toggle_mode = true
+text = "[2] Semprot Air"
+
+[node name="BtnTombak" type="Button" parent="RootMargin/MainContainer/BottomRow/ToolBar"]
+layout_mode = 2
+toggle_mode = true
+text = "[3] Tombak Gambut"
+
+[node name="BtnThermal" type="Button" parent="RootMargin/MainContainer/BottomRow/ToolBar"]
+layout_mode = 2
+text = "Thermal: OFF [Tab]"

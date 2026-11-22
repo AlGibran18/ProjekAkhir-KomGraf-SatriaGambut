@@ -1,0 +1,30 @@
+[gd_scene load_steps=4 format=3 uid="uid://c6y7e8kfv1a2b"]
+
+[ext_resource type="Script" path="res://simulation/player/player_controller_3d.gd" id="1_player"]
+[ext_resource type="PackedScene" uid="uid://ca9k5m3p7x2we" path="res://simulation/player/held_tools_3d.tscn" id="2_held"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
+radius = 0.4
+height = 1.75
+
+[node name="PlayerController3D" type="CharacterBody3D"]
+collision_layer = 2
+collision_mask = 1
+floor_snap_length = 0.3
+script = ExtResource("1_player")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.875, 0)
+shape = SubResource("CapsuleShape3D_player")
+
+[node name="Head" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+
+[node name="Camera3D" type="Camera3D" parent="Head"]
+fov = 75.0
+
+[node name="HeldTools3D" parent="Head/Camera3D" instance=ExtResource("2_held")]
+
+[node name="InteractionRay" type="RayCast3D" parent="Head"]
+target_position = Vector3(0, 0, -7.5)
+collide_with_areas = true

@@ -1,0 +1,309 @@
+[gd_scene load_steps=6 format=3 uid="uid://ck8x2m4p9q1we"]
+
+[ext_resource type="Script" path="res://ui/main_menu/main_menu.gd" id="1_menu"]
+[ext_resource type="Texture2D" path="res://assets/textures/satria_gambut_logo.jpg" id="2_logo"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.09, 0.12, 0.11, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.24, 0.52, 0.36, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 24
+content_margin_top = 24
+content_margin_right = 24
+content_margin_bottom = 24
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_modal"]
+bg_color = Color(0.08, 0.1, 0.12, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.92, 0.62, 0.18, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 28
+content_margin_top = 24
+content_margin_right = 28
+content_margin_bottom = 24
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+bg_color = Color(0.13, 0.17, 0.15, 0.9)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 14
+content_margin_top = 12
+content_margin_right = 14
+content_margin_bottom = 12
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.09, 0.08, 1)
+
+[node name="MainMargin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 48
+theme_override_constants/margin_top = 36
+theme_override_constants/margin_right = 48
+theme_override_constants/margin_bottom = 36
+
+[node name="MainHBox" type="HBoxContainer" parent="MainMargin"]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="LeftPanel" type="PanelContainer" parent="MainMargin/MainHBox"]
+custom_minimum_size = Vector2(540, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="MainMargin/MainHBox/LeftPanel"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="TitleLabel" type="Label" parent="MainMargin/MainHBox/LeftPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.82, 0.25, 1)
+theme_override_font_sizes/font_size = 38
+text = "SATRIA GAMBUT"
+
+[node name="SubtitleLabel" type="Label" parent="MainMargin/MainHBox/LeftPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.86, 0.82, 1)
+theme_override_font_sizes/font_size = 15
+text = "Simulasi 3D Prediksi Risiko & Pemadaman Kebakaran Lahan Gambut Tropis"
+
+[node name="LevelBox" type="PanelContainer" parent="MainMargin/MainHBox/LeftPanel/VBox"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="LevelBox" type="VBoxContainer" parent="MainMargin/MainHBox/LeftPanel/VBox/LevelBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SelectLabel" type="Label" parent="MainMargin/MainHBox/LeftPanel/VBox/LevelBox/LevelBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.85, 0.55, 1)
+text = "PILIH SKENARIO MISI:"
+
+[node name="LevelOption" type="OptionButton" parent="MainMargin/MainHBox/LeftPanel/VBox/LevelBox"]
+layout_mode = 2
+
+[node name="LevelDescLabel" type="Label" parent="MainMargin/MainHBox/LeftPanel/VBox/LevelBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.82, 0.88, 0.85, 1)
+theme_override_font_sizes/font_size = 13
+text = "Deskripsi skenario..."
+autowrap_mode = 3
+
+[node name="BtnStart" type="Button" parent="MainMargin/MainHBox/LeftPanel/VBox"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "MULAI SIMULASI"
+
+[node name="BtnGuide" type="Button" parent="MainMargin/MainHBox/LeftPanel/VBox"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "PANDUAN & SOP PEMADAMAN (6 LANGKAH)"
+
+[node name="BtnSettings" type="Button" parent="MainMargin/MainHBox/LeftPanel/VBox"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "PENGATURAN GRAFIS & AUDIO"
+
+[node name="BtnCredits" type="Button" parent="MainMargin/MainHBox/LeftPanel/VBox"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "CREDITS & TIM PENGEMBANG"
+
+[node name="BtnQuit" type="Button" parent="MainMargin/MainHBox/LeftPanel/VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "KELUAR"
+
+[node name="RightPanel" type="PanelContainer" parent="MainMargin/MainHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="MainMargin/MainHBox/RightPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="LogoTexture" type="TextureRect" parent="MainMargin/MainHBox/RightPanel/VBox"]
+custom_minimum_size = Vector2(360, 360)
+layout_mode = 2
+size_flags_vertical = 3
+texture = ExtResource("2_logo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="FactLabel" type="Label" parent="MainMargin/MainHBox/RightPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.9, 0.82, 1)
+theme_override_font_sizes/font_size = 14
+text = "Fakta Riset: Lahan gambut menyimpan karbon 3x lebih besar daripada hutan biasa. Api gambut merambat di bawah permukaan tanah hingga 1,5 - 3 meter dan membutuhkan injeksi air langsung!"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="GuideModal" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -380.0
+offset_top = -250.0
+offset_right = 380.0
+offset_bottom = 250.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_modal")
+
+[node name="VBox" type="VBoxContainer" parent="GuideModal"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="GuideModal/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 24
+text = "PANDUAN & SOP 6 LANGKAH SATRIA GAMBUT"
+
+[node name="Body" type="Label" parent="GuideModal/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "1. RENCANA & ANALISIS: Identifikasi zona merah (risiko PFVI ekstrem) di peta taktis, lalu pasang Sumur Air di tepi zona rawan.\n\n2. WABAH KEBAKARAN: Masuki hutan gambut 3D First-Person. Waspadai arah angin yang mendorong penyebaran api.\n\n3. BUAT SEKAT API [Tombol 1]: Gali parit sekat bakar di jalur rambatan api untuk menghentikan api.\n\n4. TEMUKAN HOTSPOT DALAM [Tombol 2 + Tab]: Padamkan api permukaan dengan Semprot Air [2]. Jika asap tipis masih mengepul, tekan [Tab] Thermal X-Ray untuk mendeteksi bara bawah tanah (kedalaman 1,5 m+).\n\n5. INJEKSI AIR [Tombol 3]: Tancapkan Tombak Gambut [3] dengan menahan Klik Kiri pada titik bara hingga bar injeksi penuh dan uap menyembur!\n\n6. MISI BERHASIL: Padamkan 100% hotspot untuk melindungi hutan dan cadangan karbon gambut. Dekati Sumur Air untuk isi ulang tangki."
+autowrap_mode = 3
+
+[node name="BtnCloseGuide" type="Button" parent="GuideModal/VBox"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "TUTUP PANDUAN"
+
+[node name="SettingsModal" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -180.0
+offset_right = 280.0
+offset_bottom = 180.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_modal")
+
+[node name="VBox" type="VBoxContainer" parent="SettingsModal"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="SettingsModal/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 24
+text = "PENGATURAN GRAFIS & AUDIO"
+
+[node name="QLabel" type="Label" parent="SettingsModal/VBox"]
+layout_mode = 2
+text = "Kualitas Grafis (Sesuaikan Spek Laptop):"
+
+[node name="QualityOption" type="OptionButton" parent="SettingsModal/VBox"]
+layout_mode = 2
+
+[node name="SLabel" type="Label" parent="SettingsModal/VBox"]
+layout_mode = 2
+text = "Sensitivitas Mouse FPS:"
+
+[node name="SensSlider" type="HSlider" parent="SettingsModal/VBox"]
+layout_mode = 2
+min_value = 0.8
+max_value = 5.0
+step = 0.2
+value = 2.2
+
+[node name="VLabel" type="Label" parent="SettingsModal/VBox"]
+layout_mode = 2
+text = "Volume Audio:"
+
+[node name="VolSlider" type="HSlider" parent="SettingsModal/VBox"]
+layout_mode = 2
+value = 80.0
+
+[node name="BtnCloseSettings" type="Button" parent="SettingsModal/VBox"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "SIMPAN & TUTUP"
+
+[node name="CreditsModal" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -360.0
+offset_top = -230.0
+offset_right = 360.0
+offset_bottom = 230.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_modal")
+
+[node name="VBox" type="VBoxContainer" parent="CreditsModal"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="CreditsModal/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 24
+text = "CREDITS — SATRIA GAMBUT"
+
+[node name="Body" type="Label" parent="CreditsModal/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "TIM PENGEMBANG (GRAFIKA KOMPUTER):\n• Ketua Tim: [Nama Ketua Tim] — NIM: [NIM Ketua]\n• Anggota 1: [Nama Anggota 1] — NIM: [NIM Anggota 1]\n• Anggota 2: [Nama Anggota 2] — NIM: [NIM Anggota 2]\n• Anggota 3: [Nama Anggota 3] — NIM: [NIM Anggota 3]\n\nREFERENSI ILMIAH:\n• Riset Pemodelan Risiko Kebakaran Gambut PeatFR / PFVI\n  (University of Nottingham, ITB, & IPB — Prof. Bagus Muljadi & Dr. Adilan Mahdiasa)\n\nATRIBUSI ASET & TEKNOLOGI:\n• Engine: Godot Engine 4 (Standalone Offline Desktop)\n• Aset 3D Alam: Stylized Nature MegaKit oleh Quaternius (Lisensi CC0 1.0)\n• Efek Suara: Disintesis Lokal Offline (.wav)"
+autowrap_mode = 3
+
+[node name="BtnCloseCredits" type="Button" parent="CreditsModal/VBox"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "TUTUP CREDITS"
