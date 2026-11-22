@@ -77,6 +77,7 @@ var mission_notes: String = ""
 var last_new_record: bool = false
 const RECORDS_PATH: String = "user://satria_gambut_records.cfg"
 const DISPLAY_SETTINGS_PATH: String = "user://satria_gambut_display.cfg"
+signal outfit_changed
 const OUTFIT_PATH: String = "user://satria_gambut_outfit.cfg"
 const UNIFORM_NAMES: Array[String] = ["Merah Rescue", "Oranye Satgas", "Hijau Rimba", "Biru Operasi"]
 const UNIFORM_COLORS: Array[Color] = [
@@ -302,6 +303,7 @@ func set_master_volume(vol: float) -> void:
 func set_outfit(uniform_id: int, helmet_id: int) -> void:
 	uniform_index = clampi(uniform_id, 0, UNIFORM_NAMES.size() - 1)
 	helmet_index = clampi(helmet_id, 0, HELMET_NAMES.size() - 1)
+	outfit_changed.emit()
 	var config: ConfigFile = ConfigFile.new()
 	config.set_value("outfit", "uniform", uniform_index)
 	config.set_value("outfit", "helmet", helmet_index)
