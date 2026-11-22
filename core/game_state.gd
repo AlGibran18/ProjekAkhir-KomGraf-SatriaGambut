@@ -76,6 +76,8 @@ var initial_carbon_tons: float = 0.0
 var mission_notes: String = ""
 var last_new_record: bool = false
 const RECORDS_PATH: String = "user://satria_gambut_records.cfg"
+const DISPLAY_SETTINGS_PATH: String = "user://satria_gambut_display.cfg"
+var fullscreen_enabled: bool = false
 var max_wells_allowed: int = 2
 
 var mouse_sensitivity: float = 0.0022
@@ -95,6 +97,7 @@ func _ready() -> void:
 	EventBus.tool_selected.connect(_on_tool_selected)
 	EventBus.thermal_mode_toggled.connect(_on_thermal_mode_toggled)
 	load_level_config(0)
+	_load_display_settings()
 
 func load_level_config(level_idx: int) -> void:
 	current_level_index = clampi(level_idx, 0, LEVEL_CONFIGS.size() - 1)
@@ -210,6 +213,42 @@ func save_best_record() -> bool:
 		return false
 	last_new_record = true
 	return true
+
+# Fullscreen is a true OS window mode, not just resizing the game canvas.
+# F11 works both from the main menu and during FPS gameplay.
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F11:
+		set_fullscreen(not fullscreen_enabled)
+		get_viewport().set_input_as_handled()
+
+func set_fullscreen(enabled: bool) -> void:
+	fullscreen_enabled = enabled
+	var window: Window = get_window()
+	if window != null:
+		window.mode = Window.MODE_FULLSCREEN if enabled else Window.MODE_WINDOWED
+		if not enabled:
+			var display_size: Vector2i = DisplayServer.screen_get_size()
+			window.size = Vector2i(mini(1280, display_size.x), mini(720, display_size.y))
+			window.position = (display_size - window.size) / 2
+	var config: ConfigFile = ConfigFile.new()
+	config.set_value("display", "fullscreen", enabled)
+	var save_result: Error = config.save(DISPLAY_SETTINGS_PATH)
+	if save_result != OK:
+		push_warning("Pengaturan layar gagal disimpan: %d" % save_result)
+
+func _load_display_settings() -> void:
+	var config: ConfigFile = ConfigFile.new()
+	if config.load(DISPLAY_SETTINGS_PATH) == OK:
+		fullscreen_enabled = bool(config.get_value("display", "fullscreen", false))
+	else:
+		fullscreen_enabled = false
+	# Defer to the next idle frame so the root window has finished initialization.
+	call_deferred("_apply_saved_display")
+
+func _apply_saved_display() -> void:
+	var window: Window = get_window()
+	if window != null:
+		window.mode = Window.MODE_FULLSCREEN if fullscreen_enabled else Window.MODE_WINDOWED
 
 func set_graphics_quality(quality: GraphicsQuality) -> void:
 	current_graphics_quality = quality
