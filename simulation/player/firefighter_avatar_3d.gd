@@ -9,6 +9,7 @@ var right_leg: Node3D
 var left_arm: Node3D
 var right_arm: Node3D
 var spray_particles: GPUParticles3D
+var dig_dust: GPUParticles3D
 var tool_mount: Node3D
 var tool_meshes: Array[MeshInstance3D] = []
 var is_using_tool: bool = false
@@ -86,18 +87,32 @@ func _mat(tint: Color) -> Material:
 func _part(name_str: String, where: Vector3, dims: Vector3, mat: Material) -> void:
 	var mesh: MeshInstance3D = MeshInstance3D.new()
 	mesh.name = name_str
-	var box: BoxMesh = BoxMesh.new()
-	box.size = dims
-	mesh.mesh = box
+	var geometry: Mesh
+	if name_str == "Head":
+		var sphere: SphereMesh = SphereMesh.new()
+		sphere.radius = dims.x * 0.55
+		sphere.height = dims.y
+		geometry = sphere
+	elif name_str == "Helmet":
+		var dome: SphereMesh = SphereMesh.new()
+		dome.radius = dims.x * 0.56
+		dome.height = dims.y
+		geometry = dome
+	else:
+		var box: BoxMesh = BoxMesh.new()
+		box.size = dims
+		geometry = box
+	mesh.mesh = geometry
 	mesh.material_override = mat
 	mesh.position = where
 	add_child(mesh)
 
 func _limb(parent: Node3D, where: Vector3, dims: Vector3, mat: Material) -> void:
 	var part: MeshInstance3D = MeshInstance3D.new()
-	var box: BoxMesh = BoxMesh.new()
-	box.size = dims
-	part.mesh = box
+	var capsule: CapsuleMesh = CapsuleMesh.new()
+	capsule.radius = dims.x * 0.52
+	capsule.height = dims.y
+	part.mesh = capsule
 	part.material_override = mat
 	part.position = where
 	parent.add_child(part)
@@ -177,7 +192,7 @@ func _upgrade_gear() -> void:
 	quad.material = water_mat
 	spray_particles.draw_pass_1 = quad
 	tool_mount.add_child(spray_particles)
-
+	_create_dig_dust()
 func _gear_on_limb(limb: Node3D, part_name: String, where: Vector3, dims: Vector3, mat: Material) -> void:
 	var model: MeshInstance3D = MeshInstance3D.new()
 	var box: BoxMesh = BoxMesh.new()
@@ -224,3 +239,35 @@ func _update_equipped_tool() -> void:
 func _on_tool_action(tool: ToolEnums.ToolType, _pos: Vector2i) -> void:
 	if tool == ToolEnums.ToolType.SEKAT_BAKAR:
 		dig_timer = 0.60
+		if dig_dust != null and visible:
+			dig_dust.restart()
+			dig_dust.emitting = true
+
+func _create_dig_dust() -> void:
+	dig_dust = GPUParticles3D.new()
+	dig_dust.name = "FirebreakSoilDust"
+	dig_dust.amount = 24
+	dig_dust.lifetime = 0.45
+	dig_dust.one_shot = true
+	dig_dust.explosiveness = 0.92
+	dig_dust.emitting = false
+	dig_dust.position = Vector3(0, 0.22, -1.12)
+	dig_dust.visibility_aabb = AABB(Vector3(-3, -1, -3), Vector3(6, 5, 6))
+	var proc: ParticleProcessMaterial = ParticleProcessMaterial.new()
+	proc.direction = Vector3.UP
+	proc.spread = 58.0
+	proc.initial_velocity_min = 0.5
+	proc.initial_velocity_max = 2.0
+	proc.gravity = Vector3(0, -7.0, 0)
+	proc.color = Color(0.42, 0.30, 0.16, 0.68)
+	dig_dust.process_material = proc
+	var mesh: SphereMesh = SphereMesh.new()
+	mesh.radius = 0.06
+	mesh.height = 0.12
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(0.43, 0.31, 0.17, 0.65)
+	mesh.material = mat
+	dig_dust.draw_pass_1 = mesh
+	add_child(dig_dust)
