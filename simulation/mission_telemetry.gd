@@ -29,6 +29,10 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if not recording or GameState.current_phase != ToolEnums.GamePhase.ACTIVE_FPS:
 		return
+	if samples.is_empty():
+		# Phase signal is emitted before GridSimulator's first _update_stats().
+		# Defer the initial sample until its first ACTIVE_FPS frame.
+		_record_snapshot()
 	sample_clock += delta
 	if sample_clock >= SAMPLE_INTERVAL:
 		sample_clock -= SAMPLE_INTERVAL
@@ -39,7 +43,6 @@ func _on_phase_changed(phase: ToolEnums.GamePhase) -> void:
 		if not recording and not report_ready and samples.is_empty():
 			recording = true
 			run_stamp = Time.get_datetime_string_from_system().replace(":", "-").replace("T", "_")
-			_record_snapshot()
 		return
 	if phase == ToolEnums.GamePhase.VICTORY or phase == ToolEnums.GamePhase.DEFEAT:
 		if recording:
