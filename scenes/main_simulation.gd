@@ -74,5 +74,5 @@ func _on_phase_changed(new_phase: ToolEnums.GamePhase) -> void:
 				)
 			else:
 				player.activate_fps_camera()
-		ToolEnums.GamePhase.PAUSED, ToolEnums.GamePhase.VICTORY, ToolEnums.GamePhase.DEFEAT:
+		ToolEnums.GamePhase.PAUSED, ToolEnums.GamePhase.VICTORY, ToolEnums.GamePhase.DEFEAT, ToolEnums.GamePhase.ABORTED:
 			player.release_mouse_cursor()
