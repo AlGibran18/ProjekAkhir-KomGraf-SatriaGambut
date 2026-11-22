@@ -106,19 +106,19 @@ text = "Simulasi 3D Prediksi Risiko & Pemadaman Kebakaran Lahan Gambut Tropis"
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_card")
 
-[node name="LevelBox" type="VBoxContainer" parent="MainMargin/MainHBox/LeftPanel/VBox/LevelBox"]
+[node name="ContentVBox" type="VBoxContainer" parent="MainMargin/MainHBox/LeftPanel/VBox/LevelBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="SelectLabel" type="Label" parent="MainMargin/MainHBox/LeftPanel/VBox/LevelBox/LevelBox"]
+[node name="SelectLabel" type="Label" parent="MainMargin/MainHBox/LeftPanel/VBox/LevelBox/ContentVBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.95, 0.85, 0.55, 1)
 text = "PILIH SKENARIO MISI:"
 
-[node name="LevelOption" type="OptionButton" parent="MainMargin/MainHBox/LeftPanel/VBox/LevelBox"]
+[node name="LevelOption" type="OptionButton" parent="MainMargin/MainHBox/LeftPanel/VBox/LevelBox/ContentVBox"]
 layout_mode = 2
 
-[node name="LevelDescLabel" type="Label" parent="MainMargin/MainHBox/LeftPanel/VBox/LevelBox"]
+[node name="LevelDescLabel" type="Label" parent="MainMargin/MainHBox/LeftPanel/VBox/LevelBox/ContentVBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.82, 0.88, 0.85, 1)
 theme_override_font_sizes/font_size = 13
@@ -176,6 +176,16 @@ theme_override_font_sizes/font_size = 14
 text = "Fakta Riset: Lahan gambut menyimpan karbon 3x lebih besar daripada hutan biasa. Api gambut merambat di bawah permukaan tanah hingga 1,5 - 3 meter dan membutuhkan injeksi air langsung!"
 horizontal_alignment = 1
 autowrap_mode = 3
+
+[node name="ModalBackdrop" type="ColorRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.02, 0.04, 0.05, 0.78)
 
 [node name="GuideModal" type="PanelContainer" parent="."]
 visible = false
@@ -300,7 +310,7 @@ text = "CREDITS — SATRIA GAMBUT"
 [node name="Body" type="Label" parent="CreditsModal/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
-text = "TIM PENGEMBANG (GRAFIKA KOMPUTER):\n• Ketua Tim: [Nama Ketua Tim] — NIM: [NIM Ketua]\n• Anggota 1: [Nama Anggota 1] — NIM: [NIM Anggota 1]\n• Anggota 2: [Nama Anggota 2] — NIM: [NIM Anggota 2]\n• Anggota 3: [Nama Anggota 3] — NIM: [NIM Anggota 3]\n\nREFERENSI ILMIAH:\n• Riset Pemodelan Risiko Kebakaran Gambut PeatFR / PFVI\n  (University of Nottingham, ITB, & IPB — Prof. Bagus Muljadi & Dr. Adilan Mahdiasa)\n\nATRIBUSI ASET & TEKNOLOGI:\n• Engine: Godot Engine 4 (Standalone Offline Desktop)\n• Aset 3D Alam: Stylized Nature MegaKit oleh Quaternius (Lisensi CC0 1.0)\n• Efek Suara: Disintesis Lokal Offline (.wav)"
+text = "TIM PENGEMBANG (GRAFIKA KOMPUTER):\n• Ketua Tim: [Nama Ketua Tim] — NIM: [NIM Ketua]\n• Anggota 1: [Nama Anggota 1] — NIM: [NIM Anggota 1]\n• Anggota 2: [Nama Anggota 2] — NIM: [NIM Anggota 2]\n• Anggota 3: [Nama Anggota 3] — NIM: [NIM Anggota 3]\n\nREFERENSI ILMIAH:\n• Riset Pemodelan Risiko Kebakaran Gambut PeatFR / PFVI\n  (University of Nottingham, ITB, & IPB — Prof. Bagus Muljadi & Dr. Adilan Mahdiasa)\n\nATRIBUSI ASET & TEKNOLOGI:\n• Engine: Godot Engine 4 (Standalone Offline Desktop)\n• Aset 3D Alam: Stylized Nature MegaKit oleh Quaternius & Nature Kit oleh Kenney.nl (CC0 1.0)\n• Efek Suara: Disintesis Lokal Offline (.wav)"
 autowrap_mode = 3
 
 [node name="BtnCloseCredits" type="Button" parent="CreditsModal/VBox"]

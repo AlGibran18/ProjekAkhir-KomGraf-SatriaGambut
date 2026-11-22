@@ -1,15 +1,19 @@
-[gd_scene load_steps=10 format=3 uid="uid://c8q3w8kfv5e5v"]
+[gd_scene load_steps=11 format=3 uid="uid://c8q3w8kfv5e5v"]
 
 [ext_resource type="Script" path="res://simulation/view/simulation_view_3d.gd" id="1_view"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cursor"]
 transparency = 1
 shading_mode = 0
-albedo_color = Color(1, 0.9, 0.25, 0.45)
+albedo_color = Color(1, 0.9, 0.25, 0.78)
 
-[sub_resource type="BoxMesh" id="BoxMesh_cursor"]
+[sub_resource type="BoxMesh" id="BoxMesh_cursor_h"]
 material = SubResource("StandardMaterial3D_cursor")
-size = Vector3(2.96, 0.08, 2.96)
+size = Vector3(2.96, 0.04, 0.1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_cursor_v"]
+material = SubResource("StandardMaterial3D_cursor")
+size = Vector3(0.1, 0.04, 2.96)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
 size = Vector3(120, 2, 120)
@@ -56,9 +60,24 @@ shape = SubResource("BoxShape3D_ground")
 
 [node name="VfxContainer" type="Node3D" parent="."]
 
-[node name="CursorHighlight" type="MeshInstance3D" parent="."]
+[node name="CursorHighlight" type="Node3D" parent="."]
 visible = false
-mesh = SubResource("BoxMesh_cursor")
+
+[node name="NorthEdge" type="MeshInstance3D" parent="CursorHighlight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.43)
+mesh = SubResource("BoxMesh_cursor_h")
+
+[node name="SouthEdge" type="MeshInstance3D" parent="CursorHighlight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.43)
+mesh = SubResource("BoxMesh_cursor_h")
+
+[node name="WestEdge" type="MeshInstance3D" parent="CursorHighlight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.43, 0, 0)
+mesh = SubResource("BoxMesh_cursor_v")
+
+[node name="EastEdge" type="MeshInstance3D" parent="CursorHighlight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.43, 0, 0)
+mesh = SubResource("BoxMesh_cursor_v")
 
 [node name="PlanningCamera" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 22.5, 38, 48.5)

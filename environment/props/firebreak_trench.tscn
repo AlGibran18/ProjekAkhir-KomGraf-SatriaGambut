@@ -1,20 +1,15 @@
-[gd_scene load_steps=6 format=3 uid="uid://cf5b8m2x9k4tp"]
+[gd_scene load_steps=5 format=3 uid="uid://cf5b8m2x9k4tp"]
+
+[ext_resource type="PackedScene" path="res://assets/models/kenney/crops_dirtDoubleRow.glb" id="1_dirt"]
+[ext_resource type="PackedScene" path="res://assets/models/kenney/rock_smallFlatA.glb" id="2_rock"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_trench"]
-albedo_color = Color(0.11, 0.08, 0.06, 1)
+albedo_color = Color(0.12, 0.09, 0.06, 1)
 roughness = 0.95
 
 [sub_resource type="BoxMesh" id="BoxMesh_trench"]
 material = SubResource("StandardMaterial3D_trench")
-size = Vector3(2.9, 0.06, 2.9)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mound"]
-albedo_color = Color(0.28, 0.2, 0.13, 1)
-roughness = 0.9
-
-[sub_resource type="BoxMesh" id="BoxMesh_mound"]
-material = SubResource("StandardMaterial3D_mound")
-size = Vector3(2.9, 0.26, 0.42)
+size = Vector3(2.92, 0.06, 2.92)
 
 [node name="FirebreakTrench" type="Node3D"]
 
@@ -22,10 +17,11 @@ size = Vector3(2.9, 0.26, 0.42)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0)
 mesh = SubResource("BoxMesh_trench")
 
-[node name="SoilMoundNorth" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.13, -1.25)
-mesh = SubResource("BoxMesh_mound")
+[node name="DirtMounds" parent="." instance=ExtResource("1_dirt")]
+transform = Transform3D(2.85, 0, 0, 0, 3.8, 0, 0, 0, 2.85, 0, 0.02, 0)
 
-[node name="SoilMoundSouth" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.13, 1.25)
-mesh = SubResource("BoxMesh_mound")
+[node name="CornerRockA" parent="." instance=ExtResource("2_rock")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, -1.1, 0.04, -1.1)
+
+[node name="CornerRockB" parent="." instance=ExtResource("2_rock")]
+transform = Transform3D(-1.3, 0, 0.5, 0, 1.4, 0, -0.5, 0, -1.3, 1.05, 0.04, 1.08)

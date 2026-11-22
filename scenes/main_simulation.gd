@@ -1,4 +1,4 @@
-# scenes/main_simulation.gd - Pengendali scene simulasi utama Satria Gambut, mengorkestrasi transisi fase Planning -> Operasi FPS -> Pause -> Evaluasi Misi.
+# scenes/main_simulation.gd - Pengendali scene simulasi utama Satria Gambut, mengorkestrasi transisi kamera sinematik Planning -> FPS -> Pause -> Evaluasi Misi.
 class_name MainSimulation
 extends Node3D
 
@@ -9,6 +9,8 @@ extends Node3D
 @onready var hud: HUD = $HUD
 @onready var planning_overlay: PlanningOverlay = $UILayer/PlanningOverlay
 @onready var pause_menu: PauseMenu = $UILayer/PauseMenu
+
+var has_transitioned_from_planning: bool = false
 
 func _ready() -> void:
 	grid_simulator.initialize_level(GameState.current_level_index)
@@ -29,9 +31,18 @@ func _ready() -> void:
 func _on_phase_changed(new_phase: ToolEnums.GamePhase) -> void:
 	match new_phase:
 		ToolEnums.GamePhase.PLANNING:
+			has_transitioned_from_planning = false
 			simulation_view_3d.activate_planning_camera()
 			player.release_mouse_cursor()
 		ToolEnums.GamePhase.ACTIVE_FPS:
-			player.activate_fps_camera()
+			if not has_transitioned_from_planning:
+				has_transitioned_from_planning = true
+				Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+				simulation_view_3d.transition_to_fps_camera(player.camera_node, func() -> void:
+					if GameState.current_phase == ToolEnums.GamePhase.ACTIVE_FPS:
+						player.activate_fps_camera()
+				)
+			else:
+				player.activate_fps_camera()
 		ToolEnums.GamePhase.PAUSED, ToolEnums.GamePhase.VICTORY, ToolEnums.GamePhase.DEFEAT:
 			player.release_mouse_cursor()

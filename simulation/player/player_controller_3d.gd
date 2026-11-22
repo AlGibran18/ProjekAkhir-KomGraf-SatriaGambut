@@ -1,4 +1,4 @@
-# simulation/player/player_controller_3d.gd - Kontroler First-Person (FPS) anti-jatuh, raycast akurat 7.5m, alat kontinu, isi ulang sumur air, dan animasi tangan Satria Gambut.
+# simulation/player/player_controller_3d.gd - Kontroler First-Person (FPS) anti-jatuh dengan gerak akselerasi halus, head-bob, strafe-tilt, sprint FOV, weapon sway, dan raycast 7.5m.
 class_name PlayerController3D
 extends CharacterBody3D
 
@@ -17,6 +17,7 @@ var current_targeted_cell: Vector2i = Vector2i(-1, -1)
 var safe_spawn_pos: Vector3 = Vector3(24.0, 0.25, 4.5)
 var ground_plane: Plane = Plane(Vector3.UP, 0.0)
 var was_near_well: bool = false
+var head_bob_time: float = 0.0
 
 func _ready() -> void:
 	floor_snap_length = 0.3
@@ -47,6 +48,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		rotate_y(-event.relative.x * sens)
 		head_node.rotate_x(-event.relative.y * sens)
 		head_node.rotation.x = clampf(head_node.rotation.x, deg_to_rad(-82.0), deg_to_rad(82.0))
+		if held_tools != null:
+			held_tools.apply_mouse_sway(event.relative)
 
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE:
@@ -91,18 +94,19 @@ func _physics_process(delta: float) -> void:
 	if Input.is_key_pressed(KEY_D):
 		input_dir.x += 1.0
 
-	var current_speed: float = sprint_speed if Input.is_key_pressed(KEY_SHIFT) else walk_speed
 	var move_direction: Vector3 = (transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)).normalized()
 	var is_moving: bool = move_direction.length_squared() > 0.0
+	var is_sprinting: bool = is_moving and Input.is_key_pressed(KEY_SHIFT)
+	var current_speed: float = sprint_speed if is_sprinting else walk_speed
 
-	if is_moving:
-		velocity.x = move_direction.x * current_speed
-		velocity.z = move_direction.z * current_speed
-	else:
-		velocity.x = move_toward(velocity.x, 0.0, current_speed * delta * 9.0)
-		velocity.z = move_toward(velocity.z, 0.0, current_speed * delta * 9.0)
+	var target_vx: float = move_direction.x * current_speed
+	var target_vz: float = move_direction.z * current_speed
+	var accel_rate: float = 11.0 if is_moving else 9.0
+	velocity.x = lerpf(velocity.x, target_vx, clampf(delta * accel_rate, 0.0, 1.0))
+	velocity.z = lerpf(velocity.z, target_vz, clampf(delta * accel_rate, 0.0, 1.0))
 
 	move_and_slide()
+	_update_camera_feel(delta, input_dir, is_moving, is_sprinting)
 	_update_raycast_targeting()
 	_check_well_proximity(delta)
 
@@ -119,6 +123,19 @@ func _physics_process(delta: float) -> void:
 
 	if held_tools != null:
 		held_tools.set_movement_state(is_moving, is_acting)
+
+func _update_camera_feel(delta: float, input_dir: Vector2, is_moving: bool, is_sprinting: bool) -> void:
+	var target_head_y: float = 1.60
+	if is_moving and is_on_floor():
+		head_bob_time += delta * (11.5 if is_sprinting else 8.5)
+		target_head_y += sin(head_bob_time) * (0.048 if is_sprinting else 0.030)
+	head_node.position.y = lerpf(head_node.position.y, target_head_y, clampf(delta * 12.0, 0.0, 1.0))
+
+	if camera_node != null:
+		var target_roll: float = -input_dir.x * 0.022
+		camera_node.rotation.z = lerpf(camera_node.rotation.z, target_roll, clampf(delta * 10.0, 0.0, 1.0))
+		var target_fov: float = 79.0 if is_sprinting else 74.0
+		camera_node.fov = lerpf(camera_node.fov, target_fov, clampf(delta * 8.0, 0.0, 1.0))
 
 func _update_raycast_targeting() -> void:
 	var has_hit: bool = false

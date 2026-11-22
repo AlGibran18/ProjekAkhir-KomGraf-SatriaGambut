@@ -1,4 +1,4 @@
-# ui/hud/hud.gd - Pengendali antarmuka First-Person (HUD): crosshair, bar injeksi bertekanan tinggi, minimap real-time, toast edukasi, visor thermal, dan info sel gambut.
+# ui/hud/hud.gd - Pengendali antarmuka First-Person (HUD): crosshair dinamis, bar injeksi, minimap real-time, toast animasi halus, dan layout anti-tabrakan.
 class_name HUD
 extends CanvasLayer
 
@@ -13,6 +13,8 @@ extends CanvasLayer
 
 @onready var minimap_canvas: Control = $RootMargin/MainContainer/TopRow/MiniMapPanel/VBox/MiniMapCanvas
 
+@onready var crosshair_control: Control = $CenterCrosshair
+@onready var crosshair_reticle: Control = $CenterCrosshair/Reticle
 @onready var injection_panel: PanelContainer = $CenterCrosshair/InjectionPanel
 @onready var injection_bar: ProgressBar = $CenterCrosshair/InjectionPanel/VBox/InjectionBar
 
@@ -114,9 +116,11 @@ func _on_mission_stats_updated(burned: int, safe: int, active: int) -> void:
 
 func _on_educational_toast(message: String, is_warning: bool) -> void:
 	toast_label.text = message
-	toast_panel.modulate = Color(1.0, 0.72, 0.42) if is_warning else Color(0.55, 1.0, 0.70)
+	toast_panel.modulate = Color(1.0, 0.72, 0.42, 0.0) if is_warning else Color(0.55, 1.0, 0.70, 0.0)
 	toast_panel.visible = true
 	toast_timer = 5.5
+	var tw: Tween = create_tween()
+	tw.tween_property(toast_panel, "modulate:a", 1.0, 0.18)
 
 func _on_injection_progress_changed(progress: float, is_active: bool) -> void:
 	injection_panel.visible = is_active
@@ -129,7 +133,18 @@ func _on_well_proximity_changed(is_near_well: bool) -> void:
 func _on_cell_hovered(pos: Vector2i, cell: PeatCellData) -> void:
 	if cell == null or pos == Vector2i(-1, -1):
 		hover_panel.visible = false
+		if crosshair_reticle != null:
+			crosshair_reticle.modulate = Color(1.0, 1.0, 1.0, 0.88)
 		return
+
+	if crosshair_reticle != null:
+		if cell.is_active_hazard():
+			crosshair_reticle.modulate = Color(1.0, 0.48, 0.14, 1.0)
+		elif cell.has_well:
+			crosshair_reticle.modulate = Color(0.25, 0.88, 1.0, 1.0)
+		else:
+			crosshair_reticle.modulate = Color(1.0, 1.0, 1.0, 0.92)
+
 	hover_panel.visible = true
 	cell_coords_label.text = "Petak (%d, %d)" % [pos.x, pos.y]
 

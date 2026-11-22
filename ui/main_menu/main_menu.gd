@@ -1,15 +1,16 @@
-# ui/main_menu/main_menu.gd - Pengendali layar utama (Main Menu), pemilih skenario level, panduan SOP, pengaturan grafis/audio, dan halaman Credits Satria Gambut.
+# ui/main_menu/main_menu.gd - Pengendali layar utama (Main Menu), pemilih skenario level, modal animasi halus, pengaturan grafis/audio, dan Credits Satria Gambut.
 class_name MainMenu
 extends Control
 
-@onready var level_option: OptionButton = $MainMargin/MainHBox/LeftPanel/VBox/LevelBox/LevelOption
-@onready var level_desc_label: Label = $MainMargin/MainHBox/LeftPanel/VBox/LevelBox/LevelDescLabel
+@onready var level_option: OptionButton = $MainMargin/MainHBox/LeftPanel/VBox/LevelBox/ContentVBox/LevelOption
+@onready var level_desc_label: Label = $MainMargin/MainHBox/LeftPanel/VBox/LevelBox/ContentVBox/LevelDescLabel
 @onready var btn_start: Button = $MainMargin/MainHBox/LeftPanel/VBox/BtnStart
 @onready var btn_guide: Button = $MainMargin/MainHBox/LeftPanel/VBox/BtnGuide
 @onready var btn_settings: Button = $MainMargin/MainHBox/LeftPanel/VBox/BtnSettings
 @onready var btn_credits: Button = $MainMargin/MainHBox/LeftPanel/VBox/BtnCredits
 @onready var btn_quit: Button = $MainMargin/MainHBox/LeftPanel/VBox/BtnQuit
 
+@onready var modal_backdrop: ColorRect = $ModalBackdrop
 @onready var guide_modal: PanelContainer = $GuideModal
 @onready var settings_modal: PanelContainer = $SettingsModal
 @onready var credits_modal: PanelContainer = $CreditsModal
@@ -87,12 +88,20 @@ func _on_vol_changed(val: float) -> void:
 
 func _show_only_modal(target: PanelContainer) -> void:
 	AudioManager.play_sfx("click")
+	modal_backdrop.visible = true
+	modal_backdrop.modulate.a = 0.0
 	guide_modal.visible = (target == guide_modal)
 	settings_modal.visible = (target == settings_modal)
 	credits_modal.visible = (target == credits_modal)
+	target.modulate.a = 0.0
+	var tw: Tween = create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(modal_backdrop, "modulate:a", 1.0, 0.16)
+	tw.tween_property(target, "modulate:a", 1.0, 0.16)
 
 func _close_modals() -> void:
 	AudioManager.play_sfx("click")
+	modal_backdrop.visible = false
 	guide_modal.visible = false
 	settings_modal.visible = false
 	credits_modal.visible = false
