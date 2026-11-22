@@ -19,10 +19,13 @@ extends Control
 @onready var sens_slider: HSlider = $SettingsModal/VBox/SensSlider
 @onready var vol_slider: HSlider = $SettingsModal/VBox/VolSlider
 
+var display_option: OptionButton
+
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().paused = false
 	_populate_levels()
+	_create_display_setting()
 	_populate_settings()
 
 	level_option.item_selected.connect(_on_level_selected)
@@ -53,6 +56,8 @@ func _populate_settings() -> void:
 	quality_option.add_item("Sedang (Seimbang)")
 	quality_option.add_item("Tinggi (Laptop Gaming / Bayangan Penuh)")
 	quality_option.select(int(GameState.current_graphics_quality))
+	if display_option != null:
+		display_option.select(1 if GameState.fullscreen_enabled else 0)
 	sens_slider.value = GameState.mouse_sensitivity * 1000.0
 	vol_slider.value = GameState.master_volume * 100.0
 
@@ -84,6 +89,28 @@ func _on_start_pressed() -> void:
 	GameState.load_level_config(level_option.selected)
 	get_tree().change_scene_to_file("res://scenes/main_simulation.tscn")
 
+func _create_display_setting() -> void:
+	# Construct in code to keep older scenes compatible.
+	var settings_box: VBoxContainer = $SettingsModal/VBox
+	var display_label: Label = Label.new()
+	display_label.text = "Mode Tampilan (F11 untuk berganti):"
+	display_label.name = "DisplayModeLabel"
+	var volume_label: Control = $SettingsModal/VBox/VLabel
+	var insertion_index: int = volume_label.get_index()
+	settings_box.add_child(display_label)
+	settings_box.move_child(display_label, insertion_index)
+	display_option = OptionButton.new()
+	display_option.name = "DisplayModeOption"
+	display_option.add_item("Windowed (Jendela)")
+	display_option.add_item("Fullscreen (Layar Penuh)")
+	settings_box.add_child(display_option)
+	settings_box.move_child(display_option, insertion_index + 1)
+	display_option.item_selected.connect(_on_display_mode_selected)
+
+func _on_display_mode_selected(index: int) -> void:
+	AudioManager.play_sfx("click")
+	GameState.set_fullscreen(index == 1)
+
 func _on_quality_selected(idx: int) -> void:
 	AudioManager.play_sfx("click")
 	GameState.set_graphics_quality(idx as GameState.GraphicsQuality)
@@ -95,6 +122,8 @@ func _on_vol_changed(val: float) -> void:
 	GameState.set_master_volume(val / 100.0)
 
 func _show_only_modal(target: PanelContainer) -> void:
+	if target == settings_modal and display_option != null:
+		display_option.select(1 if GameState.fullscreen_enabled else 0)
 	AudioManager.play_sfx("click")
 	modal_backdrop.visible = true
 	modal_backdrop.modulate.a = 0.0
