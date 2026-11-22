@@ -24,6 +24,7 @@ var guide_display_checkbox: CheckBox
 var wardrobe_dialog: ConfirmationDialog
 var uniform_choice: OptionButton
 var helmet_choice: OptionButton
+var cinematic_menu: CinematicMainMenu
 @onready var main_margin: MarginContainer = $MainMargin
 @onready var menu_columns: HBoxContainer = $MainMargin/MainHBox
 @onready var left_panel: PanelContainer = $MainMargin/MainHBox/LeftPanel
@@ -59,6 +60,7 @@ func _ready() -> void:
 	quality_option.item_selected.connect(_on_quality_selected)
 	sens_slider.value_changed.connect(_on_sens_changed)
 	vol_slider.value_changed.connect(_on_vol_changed)
+	_create_cinematic_menu()
 
 # The native window maximize button and edge dragging need no extra hotkey.
 # Anchored layout follows viewport size; margins and image minimums adapt.
@@ -431,3 +433,14 @@ func _animate_menu_intro() -> void:
 	var tween: Tween = create_tween()
 	tween.tween_property(left_panel, "modulate:a", 1.0, 0.34)
 	tween.parallel().tween_property(right_panel, "modulate:a", 1.0, 0.50).set_delay(0.10)
+
+# The cinematic presentation reuses all original MainMenu controls,
+# dialogs, callbacks, settings, level data, and the unchanged logo texture.
+func _create_cinematic_menu() -> void:
+	cinematic_menu = CinematicMainMenu.new()
+	cinematic_menu.name = "CinematicMenuV86"
+	cinematic_menu.initialize(self)
+	add_child(cinematic_menu)
+	# Keep the original dialogs and their backdrop ABOVE the new menu.
+	move_child(cinematic_menu, 1)
+	main_margin.visible = false
