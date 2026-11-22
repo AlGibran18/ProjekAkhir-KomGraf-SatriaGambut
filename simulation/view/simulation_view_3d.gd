@@ -212,7 +212,9 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 			cell_holder.add_child(plant_holder)
 
 			var in_spawn_zone: bool = (x >= (width / 2) - 2 and x <= (width / 2) + 2 and y <= 2)
-			if not in_spawn_zone:
+			# Reserved 7x7 safety footprint: no trees, props or collider inside the outpost.
+			var reserved_outpost_zone: bool = x >= 5 and x <= 11 and y >= 0 and y <= 6
+			if not in_spawn_zone and not reserved_outpost_zone:
 				var q1_pos: Vector3 = Vector3(-0.78 + (rand_b - 0.5) * 0.25, 0.0, -0.78 + (rand_a - 0.5) * 0.25)
 				if rand_a > 0.36:
 					var tree_idx: int = int(rand_b * float(healthy_trees.size())) % healthy_trees.size()
@@ -310,6 +312,9 @@ func _init_border_forest(width: int, height: int) -> void:
 		for x in range(-3, width + 3):
 			if x >= 0 and x < width and y >= 0 and y < height:
 				continue
+			# Tall border trees can lean through roof and wall even from outside the map.
+			if x >= 4 and x <= 12 and y >= -3 and y <= 5:
+				continue
 			var hash_val: float = sin(float(x * 19 + y * 41)) * 28374.11
 			var rand_val: float = hash_val - floorf(hash_val)
 			if rand_val > 0.35:
@@ -326,29 +331,29 @@ func _init_posko_and_fences(width: int, height: int) -> void:
 	var cell_sz: float = GameState.CELL_SIZE
 	var tent_a: Node3D = kenney_tent_scene.instantiate() as Node3D
 	tent_a.scale = Vector3(3.5, 3.5, 3.5)
-	tent_a.position = Vector3(5.4 * cell_sz, 0.0, 0.4 * cell_sz)
+	tent_a.position = Vector3(3.0 * cell_sz, 0.0, 0.4 * cell_sz)
 	tent_a.rotation.y = 0.25
 	props_container.add_child(tent_a)
 
 	var tent_b: Node3D = kenney_tent_scene.instantiate() as Node3D
 	tent_b.scale = Vector3(3.5, 3.5, 3.5)
-	tent_b.position = Vector3(10.2 * cell_sz, 0.0, 0.4 * cell_sz)
+	tent_b.position = Vector3(12.8 * cell_sz, 0.0, 0.4 * cell_sz)
 	tent_b.rotation.y = -0.3
 	props_container.add_child(tent_b)
 
 	var stack_a: Node3D = kenney_log_stack_scene.instantiate() as Node3D
 	stack_a.scale = Vector3(2.4, 2.4, 2.4)
-	stack_a.position = Vector3(6.8 * cell_sz, 0.0, 0.4 * cell_sz)
+	stack_a.position = Vector3(3.1 * cell_sz, 0.0, 3.1 * cell_sz)
 	props_container.add_child(stack_a)
 
 	var camp_a: Node3D = kenney_campfire_scene.instantiate() as Node3D
 	camp_a.scale = Vector3(2.4, 2.4, 2.4)
-	camp_a.position = Vector3(9.0 * cell_sz, 0.0, 0.5 * cell_sz)
+	camp_a.position = Vector3(12.3 * cell_sz, 0.0, 3.0 * cell_sz)
 	props_container.add_child(camp_a)
 
 	var sign_a: Node3D = kenney_sign_scene.instantiate() as Node3D
 	sign_a.scale = Vector3(2.8, 2.8, 2.8)
-	sign_a.position = Vector3(6.2 * cell_sz, 0.0, 1.35 * cell_sz)
+	sign_a.position = Vector3(4.3 * cell_sz, 0.0, 1.2 * cell_sz)
 	sign_a.rotation.y = PI
 	props_container.add_child(sign_a)
 
@@ -377,19 +382,8 @@ func _init_posko_and_fences(width: int, height: int) -> void:
 		props_container.add_child(fn_right)
 
 func _create_enterable_outpost() -> void:
-	# Place immediately behind the observation station, preserving the
-	# original player spawn at z=3 and opening a walkable north-side entrance.
-	for y in range(2, 5):
-		for x in range(7, 10):
-			var pos: Vector2i = Vector2i(x, y)
-			if not cell_visual_nodes.has(pos):
-				continue
-			var holder: Node3D = cell_visual_nodes[pos]
-			for child_name in ["TreeHolder", "PlantHolder"]:
-				var group: Node3D = holder.get_node_or_null(child_name) as Node3D
-				if group != null:
-					group.visible = false
-					group.process_mode = Node.PROCESS_MODE_DISABLED
+	# All procedural vegetation and their colliders are excluded during generation
+	# from the reserved footprint (x=5..11, y=0..6); no hidden colliders.
 	var outpost: EnterableOutpost3D = EnterableOutpost3D.new()
 	outpost.name = "PoskoOperasiMasuk"
 	outpost.position = Vector3(8.0 * GameState.CELL_SIZE, 0.0, 8.2)
