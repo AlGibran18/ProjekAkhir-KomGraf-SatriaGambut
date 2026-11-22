@@ -47,6 +47,7 @@ func _ready() -> void:
 	_part("BootRight", Vector3(0.13, 0.11, -0.05), Vector3(0.21, 0.20, 0.30), dark)
 	_upgrade_gear()
 	apply_outfit()
+	GameState.outfit_changed.connect(apply_outfit)
 	EventBus.tool_action_performed.connect(_on_tool_action)
 	EventBus.tool_selected.connect(_on_tool_changed)
 	_on_tool_changed(GameState.current_tool)
