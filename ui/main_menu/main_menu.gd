@@ -20,6 +20,10 @@ extends Control
 @onready var vol_slider: HSlider = $SettingsModal/VBox/VolSlider
 
 var display_option: OptionButton
+@onready var main_margin: MarginContainer = $MainMargin
+@onready var menu_columns: HBoxContainer = $MainMargin/MainHBox
+@onready var left_panel: PanelContainer = $MainMargin/MainHBox/LeftPanel
+@onready var logo_texture: TextureRect = $MainMargin/MainHBox/RightPanel/VBox/LogoTexture
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -27,6 +31,8 @@ func _ready() -> void:
 	_populate_levels()
 	_create_display_setting()
 	_populate_settings()
+	resized.connect(_on_menu_resized)
+	call_deferred("_on_menu_resized")
 	# Defer display restoration until buttons, modals and mouse handling exist.
 	GameState.call_deferred("_apply_saved_display")
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -45,6 +51,23 @@ func _ready() -> void:
 	quality_option.item_selected.connect(_on_quality_selected)
 	sens_slider.value_changed.connect(_on_sens_changed)
 	vol_slider.value_changed.connect(_on_vol_changed)
+
+# The native window maximize button and edge dragging need no extra hotkey.
+# Anchored layout follows viewport size; margins and image minimums adapt.
+func _on_menu_resized() -> void:
+	if main_margin == null or menu_columns == null:
+		return
+	var size_now: Vector2 = size
+	var compact: bool = size_now.x < 1180.0 or size_now.y < 680.0
+	var margin_x: int = 18 if compact else 48
+	var margin_y: int = 16 if compact else 36
+	main_margin.add_theme_constant_override("margin_left", margin_x)
+	main_margin.add_theme_constant_override("margin_right", margin_x)
+	main_margin.add_theme_constant_override("margin_top", margin_y)
+	main_margin.add_theme_constant_override("margin_bottom", margin_y)
+	menu_columns.add_theme_constant_override("separation", 14 if compact else 32)
+	left_panel.custom_minimum_size.x = 390.0 if compact else 540.0
+	logo_texture.custom_minimum_size = Vector2(220, 220) if compact else Vector2(360, 360)
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_WINDOW_FOCUS_IN:
