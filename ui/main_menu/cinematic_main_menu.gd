@@ -215,32 +215,51 @@ func _activate(index: int) -> void:
 func _build_scenario_panel() -> void:
 	scenario_panel = PanelContainer.new()
 	scenario_panel.name = "ScenarioIntelCard"
-	scenario_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.076, 0.091, 0.88), Color(0.25, 0.84, 0.77), 13))
+	scenario_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.025, 0.076, 0.091, 0.90), Color(0.25, 0.84, 0.77), 13))
 	design.add_child(scenario_panel)
-	_placed(scenario_panel, Vector2(782, 407), Vector2(458, 255))
+	_placed(scenario_panel, Vector2(768, 414), Vector2(473, 251))
 	var stack: VBoxContainer = VBoxContainer.new()
 	stack.name = "MissionCardStack"
-	stack.add_theme_constant_override("separation", 7)
+	stack.add_theme_constant_override("separation", 6)
 	scenario_panel.add_child(stack)
 	scenario_heading = _label("◆  SKENARIO  /  PILIH OPERASI", 15, Color(0.43, 1.0, 0.84))
 	stack.add_child(scenario_heading)
-	var thin: HSeparator = HSeparator.new()
-	stack.add_child(thin)
-	var info_label: Label = _label("MISI TERPILIH", 11, Color(0.95, 0.78, 0.43))
-	stack.add_child(info_label)
-	# Reuse live scene nodes, retaining all existing item_selected connections.
-	host.level_option.reparent(stack, false)
-	host.level_option.custom_minimum_size.y = 39
+	var separator: HSeparator = HSeparator.new()
+	stack.add_child(separator)
+	var layout_row: HBoxContainer = HBoxContainer.new()
+	layout_row.add_theme_constant_override("separation", 12)
+	stack.add_child(layout_row)
+	var preview_frame: PanelContainer = PanelContainer.new()
+	preview_frame.custom_minimum_size = Vector2(140, 157)
+	preview_frame.add_theme_stylebox_override("panel", _panel_style(Color(0.04, 0.12, 0.14), Color(0.37, 0.73, 0.64), 7))
+	layout_row.add_child(preview_frame)
+	var image: TextureRect = TextureRect.new()
+	image.name = "PeatlandScenarioPreview"
+	image.texture = load("res://ui/main_menu/cinematic_peatland_bg.svg") as Texture2D
+	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	image.custom_minimum_size = Vector2(110, 126)
+	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	preview_frame.add_child(image)
+	var details: VBoxContainer = VBoxContainer.new()
+	details.custom_minimum_size.x = 260
+	details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	details.add_theme_constant_override("separation", 5)
+	layout_row.add_child(details)
+	details.add_child(_label("OPERASI YANG DIPILIH", 11, Color(0.95, 0.78, 0.43)))
+	# Reuse original controls: records and MainMenu's scenario callbacks survive.
+	host.level_option.reparent(details, false)
+	host.level_option.custom_minimum_size.y = 37
 	host.level_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_style_scenario_select(host.level_option)
-	host.level_desc_label.reparent(stack, false)
-	host.level_desc_label.custom_minimum_size.y = 80
+	host.level_desc_label.reparent(details, false)
+	host.level_desc_label.custom_minimum_size.y = 88
 	host.level_desc_label.add_theme_color_override("font_color", Color(0.86, 0.94, 0.90))
-	host.level_desc_label.add_theme_font_size_override("font_size", 13)
+	host.level_desc_label.add_theme_font_size_override("font_size", 11)
 	host.level_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var divider: HSeparator = HSeparator.new()
 	stack.add_child(divider)
-	level_info = _label("Pilih skenario lalu tekan Mulai Operasi", 12, Color(0.74, 0.91, 0.85))
+	level_info = _label("Skenario siap dijalankan", 12, Color(0.74, 0.91, 0.85))
 	stack.add_child(level_info)
 
 func _style_scenario_select(option: OptionButton) -> void:
