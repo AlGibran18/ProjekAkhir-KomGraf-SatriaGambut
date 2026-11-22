@@ -578,10 +578,12 @@ func _update_dynamic_fog(delta: float) -> void:
 	if world_env == null or world_env.environment == null:
 		return
 	var hazard_ratio: float = clampf(float(GameState.active_fire_cells) / 14.0, 0.0, 1.0)
-	var target_density: float = lerpf(0.010, 0.032, hazard_ratio)
+	var rain_ratio: float = clampf(GameState.global_rainfall_rate / 12.0, 0.0, 1.0)
+	var target_density: float = lerpf(0.010, 0.032, hazard_ratio) + rain_ratio * 0.004
 	var clear_sky: Color = Color(0.58, 0.74, 0.86)
 	var smoky_sky: Color = Color(0.66, 0.54, 0.42)
 	var target_color: Color = clear_sky.lerp(smoky_sky, hazard_ratio)
+	target_color = target_color.lerp(Color(0.36, 0.43, 0.51), rain_ratio * 0.45)
 	world_env.environment.fog_density = lerpf(world_env.environment.fog_density, target_density, delta * 1.5)
 	world_env.environment.fog_light_color = world_env.environment.fog_light_color.lerp(target_color, delta * 1.5)
 	world_env.environment.background_color = world_env.environment.background_color.lerp(target_color, delta * 1.5)
