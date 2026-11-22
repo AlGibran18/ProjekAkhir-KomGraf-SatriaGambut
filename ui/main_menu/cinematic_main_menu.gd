@@ -4,7 +4,7 @@ class_name CinematicMainMenu
 extends Control
 
 const DESIGN_SIZE: Vector2 = Vector2(1280.0, 720.0)
-var host: MainMenu
+var host
 var design: Control
 var level_name: Label
 var level_info: Label
@@ -16,7 +16,7 @@ var scenario_panel: PanelContainer
 var scenario_heading: Label
 var glow_line: ColorRect
 
-func initialize(menu: MainMenu) -> void:
+func initialize(menu: Node) -> void:
 	host = menu
 
 func _ready() -> void:
@@ -127,7 +127,7 @@ func _build_main_navigation() -> void:
 	var marker: Label = _label("OPERATIONS  /  MAIN MENU", 13, Color(0.91, 0.80, 0.48))
 	design.add_child(marker)
 	_placed(marker, Vector2(42, 291), Vector2(362, 22))
-	var nav_data: Array[Dictionary] = [
+	var nav_data: Array = [
 		{"title":"▶    MULAI OPERASI", "action":0},
 		{"title":"▤    PILIH SKENARIO", "action":1},
 		{"title":"◈    PANDUAN & SOP", "action":2},
