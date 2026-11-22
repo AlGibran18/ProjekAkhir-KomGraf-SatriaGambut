@@ -83,7 +83,7 @@ func _create_animated_door() -> void:
 	door_hinge.name = "AnimatedDoorHinge"
 	door_hinge.position = Vector3(-1.10, 0.0, -3.48)
 	add_child(door_hinge)
-	var leaf: StaticBody3D = StaticBody3D.new()
+	var leaf: AnimatableBody3D = AnimatableBody3D.new()
 	leaf.name = "DoorLeafCollider"
 	leaf.collision_layer = 1
 	leaf.position = Vector3(1.05, 1.12, 0.0)
