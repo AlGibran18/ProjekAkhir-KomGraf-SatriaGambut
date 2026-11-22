@@ -1,5 +1,27 @@
 # Satria Gambut V8.6 — Animated Outpost Door, Modern Menu & Triangular Navigation Arrow
 
+## Door revision — manual interaction (latest V8.6 update)
+
+**This section overrides the earlier automatic-door descriptions below.** The door is now **manual**.
+
+- Approach within **3.8 m** of the outpost door (either side, FPS or TPP).
+- On-screen prompt appears: **[F] BUKA PINTU** (closed), **PINTU BERGERAK...** (animating), or **[F] TUTUP PINTU** (open).
+- Press **F** to open. Wait approximately **0.85 seconds** for the door to finish swinging; then walk through.
+- Press **F** again while nearby to close. The entrance becomes solid again. The door refuses to close while the player is standing across the threshold, avoiding a collision trap.
+- **No automatic open/close based on walking proximity.**
+- Removed the redundant invisible `ClosedDoorwayGate` collider that could leave the apparently open doorway blocked. Closed-door collision is provided by the door's own `AnimatableBody3D` leaf; its collision shape becomes inactive when the open animation finishes, and reactivates before closing.
+- Other hotkeys are unchanged (E still refills wells, H navigation, V FPS/TPP).
+
+### Manual regression test
+1. [ ] With the door **closed**, walk into it before pressing F: player must be blocked.
+2. [ ] Approach, confirm prompt `[F] BUKA PINTU`, press F: door should swing visibly.
+3. [ ] After the animation, walk through the exact center of the opening: **no invisible wall**.
+4. [ ] Step back near the entrance while open; press F: door should close and again block entry.
+5. [ ] Attempt to close while standing in the threshold: should show a gentle reminder and not push or trap the character.
+6. [ ] Try the interaction from both the inside and the outside of the outpost, in FPS and TPP.
+7. [ ] Check all previous menu, navigation, audio, and mission mechanics still work.
+
+
 Base: `feature/modern-hud-smart-navigation-v8-5` (user-confirmed working after the AudioManager typed Array fix).
 
 ## 1. Posko: animated opening and closing door
