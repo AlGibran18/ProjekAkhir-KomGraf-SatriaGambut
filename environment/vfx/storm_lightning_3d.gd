@@ -78,10 +78,10 @@ func _process(delta: float) -> void:
 		var first: float = 1.0 if flash_age < 0.085 else 0.0
 		var second: float = 0.72 if flash_age > 0.14 and flash_age < 0.24 else 0.0
 		var tail: float = maxf(0.0, 0.19 - flash_age) * 0.7
-		var brightness: float = maxf(first, second, tail)
+		var brightness: float = maxf(maxf(first, second), tail)
 		# Limit brightness to avoid harsh flashing; no blank-white screen.
-		flash_rect.color.a = brightness * 0.13 * strike_strength
-		bolt.modulate.a = brightness * 0.85
+		flash_rect.color = Color(0.78, 0.87, 1.0, brightness * 0.13 * strike_strength)
+		bolt.modulate = Color(1.0, 1.0, 1.0, brightness * 0.85)
 		bolt.queue_redraw()
 		if world_view != null and world_view.sun_light != null:
 			var lamp: DirectionalLight3D = world_view.sun_light
