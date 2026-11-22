@@ -18,8 +18,16 @@ var active_tool: ToolEnums.ToolType = ToolEnums.ToolType.SEMPROT_PERMUKAAN
 func _ready() -> void:
 	position = base_position
 	EventBus.tool_selected.connect(_on_tool_selected)
+	EventBus.graphics_quality_changed.connect(_on_quality_changed)
+	_on_quality_changed(int(GameState.current_graphics_quality))
 	EventBus.tool_action_performed.connect(_on_tool_action_performed)
 	_on_tool_selected(GameState.current_tool)
+
+func _on_quality_changed(quality: int) -> void:
+	if water_jet_particles == null:
+		return
+	var ratios: Array[float] = [0.40, 0.75, 1.0]
+	water_jet_particles.amount_ratio = ratios[clampi(quality, 0, 2)]
 
 func apply_mouse_sway(relative: Vector2) -> void:
 	sway_target.x = clampf(sway_target.x - relative.x * 0.0012, -0.045, 0.045)
