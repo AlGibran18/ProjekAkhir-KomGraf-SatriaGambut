@@ -12,6 +12,9 @@ var simulator: GridSimulator
 var wind_player: AudioStreamPlayer
 var rain_player: AudioStreamPlayer
 var fire_player: AudioStreamPlayer3D
+var rain_drops_player: AudioStreamPlayer
+var thunder_player: AudioStreamPlayer
+var thunder_stream: AudioStreamWAV
 var update_elapsed: float = 0.0
 var nearest_fire_distance: float = INF
 var current_wind_db: float = -65.0
@@ -36,6 +39,20 @@ func _ready() -> void:
 	rain_player.stream = _build_noise_loop(1)
 	rain_player.volume_db = -65.0
 	add_child(rain_player)
+
+	# Separate rain detail track adds droplets and nearby surface impacts.
+	rain_drops_player = AudioStreamPlayer.new()
+	rain_drops_player.name = "RainDetail"
+	rain_drops_player.stream = _build_noise_loop(3)
+	rain_drops_player.volume_db = -80.0
+	add_child(rain_drops_player)
+
+	thunder_stream = _build_noise_loop(4)
+	thunder_player = AudioStreamPlayer.new()
+	thunder_player.name = "ThunderClap"
+	thunder_player.stream = thunder_stream
+	thunder_player.volume_db = -18.0
+	add_child(thunder_player)
 
 	fire_player = AudioStreamPlayer3D.new()
 	fire_player.name = "NearestFireCrackle"
@@ -66,12 +83,16 @@ func _on_phase_changed(phase: ToolEnums.GamePhase) -> void:
 			wind_player.play()
 		if not rain_player.playing:
 			rain_player.play()
+		if not rain_drops_player.playing:
+			rain_drops_player.play()
 		if not fire_player.playing:
 			fire_player.play()
 		_update_environment_audio(UPDATE_INTERVAL)
 	else:
 		wind_player.stop()
 		rain_player.stop()
+		rain_drops_player.stop()
+		thunder_player.stop()
 		fire_player.stop()
 
 func _update_environment_audio(delta: float) -> void:
@@ -87,6 +108,7 @@ func _update_environment_audio(delta: float) -> void:
 	current_rain_db = move_toward(current_rain_db, rain_target, delta * 18.0)
 	wind_player.volume_db = current_wind_db
 	rain_player.volume_db = current_rain_db
+	rain_drops_player.volume_db = current_rain_db - 9.0
 
 	var player_xz: Vector2 = Vector2(tracked_player.global_position.x, tracked_player.global_position.z)
 	var closest: Vector2i = Vector2i(-1, -1)
@@ -112,6 +134,13 @@ func _update_environment_audio(delta: float) -> void:
 	current_fire_db = move_toward(current_fire_db, fire_target, delta * 18.0)
 	fire_player.volume_db = current_fire_db
 
+func play_thunder(intensity: float) -> void:
+	if GameState.current_phase != ToolEnums.GamePhase.ACTIVE_FPS:
+		return
+	thunder_player.volume_db = lerpf(-22.0, -12.0, clampf(intensity, 0.0, 1.0))
+	thunder_player.pitch_scale = rng.randf_range(0.84, 1.12)
+	thunder_player.play()
+
 func _build_noise_loop(kind: int) -> AudioStreamWAV:
 	var sample_count: int = SAMPLE_RATE * SAMPLE_SECONDS
 	var pcm: PackedByteArray = PackedByteArray()
@@ -119,6 +148,7 @@ func _build_noise_loop(kind: int) -> AudioStreamWAV:
 	var low: float = 0.0
 	var medium: float = 0.0
 	var crackle: float = 0.0
+	var drops: float = 0.0
 	for i in range(sample_count):
 		var noise: float = rng.randf_range(-1.0, 1.0)
 		low = low * 0.993 + noise * 0.007
@@ -127,15 +157,28 @@ func _build_noise_loop(kind: int) -> AudioStreamWAV:
 		match kind:
 			0: # Wind: slow, soft low-frequency broadband hiss.
 				sample = clampf(low * 5.6 + medium * 0.42, -1.0, 1.0) * 0.48
-			1: # Rain: dispersed high-frequency noise, less bass.
-				sample = (noise - medium * 0.65) * 0.24
+			1: # Rain: wash of droplets at varied frequencies; shaped low-mid hiss.
+				sample = (noise * 0.17 + medium * 0.24 + low * 1.2) * 0.72
 			2: # Fire: soft rumble with randomized transient crackles.
 				if rng.randf() < 0.004:
 					crackle = rng.randf_range(-1.0, 1.0)
 				crackle *= 0.92
 				sample = (low * 2.3 + medium * 0.12 + crackle * 0.60) * 0.58
+			3: # Individual rain hits on leaves / soil.
+				if rng.randf() < 0.016:
+					drops = rng.randf_range(0.35, 0.95)
+				drops *= 0.85
+				sample = (medium * 0.18 + drops * noise * 0.55) * 0.70
+			4: # Thunder: close attack followed by a low-frequency rolling tail.
+				var time_sec: float = float(i) / float(SAMPLE_RATE)
+				var attack: float = exp(-time_sec * 6.0)
+				var rumble: float = exp(-time_sec * 0.85)
+				sample = (noise * attack * 0.48 + low * 5.0 * rumble + medium * 0.10 * rumble) * 0.70
 		# Avoid hard clipping or clicks at loop boundaries.
 		var edge: float = minf(float(i) / 1200.0, float(sample_count - 1 - i) / 1200.0)
+		# Thunder has an initial crack; don't fade in for 75 ms.
+		if kind == 4:
+			edge = minf(1.0, float(sample_count - 1 - i) / 1200.0)
 		sample *= clampf(edge, 0.0, 1.0)
 		sample = clampf(sample, -0.95, 0.95)
 		pcm.encode_s16(i * 2, int(roundf(sample * 32767.0)))
@@ -145,7 +188,7 @@ func _build_noise_loop(kind: int) -> AudioStreamWAV:
 	result.mix_rate = SAMPLE_RATE
 	result.stereo = false
 	result.data = pcm
-	result.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	result.loop_mode = AudioStreamWAV.LOOP_DISABLED if kind == 4 else AudioStreamWAV.LOOP_FORWARD
 	result.loop_begin = 0
 	result.loop_end = sample_count
 	return result
