@@ -19,9 +19,15 @@ var ground_plane: Plane = Plane(Vector3.UP, 0.0)
 var was_near_well: bool = false
 var head_bob_time: float = 0.0
 var cinematic_mode_enabled: bool = false
+var third_person_enabled: bool = false
+var third_person_arm: SpringArm3D
+var third_person_camera: Camera3D
+var firefighter_avatar: FirefighterAvatar3D
+var camera_hint_timer: float = 0.0
 
 func _ready() -> void:
 	floor_snap_length = 0.3
+	_create_third_person_rig()
 
 func set_grid_simulator(simulator: GridSimulator) -> void:
 	grid_simulator = simulator
@@ -34,7 +40,10 @@ func set_spawn_position(pos: Vector3) -> void:
 	head_node.rotation.x = deg_to_rad(-12.0)
 
 func activate_fps_camera() -> void:
-	camera_node.current = true
+	if third_person_enabled and third_person_camera != null:
+		third_person_camera.current = true
+	else:
+		camera_node.current = true
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func release_mouse_cursor() -> void:
@@ -53,7 +62,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			held_tools.apply_mouse_sway(event.relative)
 
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_ESCAPE:
+		if event.keycode == KEY_V:
+			set_third_person(not third_person_enabled)
+			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_ESCAPE:
 			release_mouse_cursor()
 			if grid_simulator != null:
 				grid_simulator.cancel_injection()
@@ -108,6 +120,8 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 	_update_camera_feel(delta, input_dir, is_moving, is_sprinting)
+	if firefighter_avatar != null:
+		firefighter_avatar.animate_movement(delta, is_moving, is_sprinting)
 	_update_raycast_targeting()
 	_check_well_proximity(delta)
 
@@ -142,7 +156,19 @@ func _update_raycast_targeting() -> void:
 	var has_hit: bool = false
 	var hit_pos: Vector3 = Vector3.ZERO
 
-	if interaction_ray != null and interaction_ray.is_colliding():
+	# Third person crosshair comes from the third-person camera, but action
+	# range remains capped to the player's original 8 m tool reach.
+	if third_person_enabled and third_person_camera != null:
+		var viewport_center: Vector2 = get_viewport().get_visible_rect().size * 0.5
+		var origin: Vector3 = third_person_camera.project_ray_origin(viewport_center)
+		var direction: Vector3 = third_person_camera.project_ray_normal(viewport_center)
+		var ray_hit: Variant = ground_plane.intersects_ray(origin, direction)
+		if ray_hit != null:
+			var candidate: Vector3 = ray_hit
+			if global_position.distance_to(candidate) <= 8.0:
+				hit_pos = candidate
+				has_hit = true
+	elif interaction_ray != null and interaction_ray.is_colliding():
 		hit_pos = interaction_ray.get_collision_point()
 		has_hit = true
 	elif camera_node != null:
@@ -201,3 +227,35 @@ func _refill_nearby_well(requested: float) -> float:
 			if transferred > 0.0:
 				return transferred
 	return 0.0
+
+# TPP has a spring-arm anti-clipping camera and a visual-only character rig.
+# The original CharacterBody3D collider, gameplay tools and hotkeys remain unchanged.
+func _create_third_person_rig() -> void:
+	third_person_arm = SpringArm3D.new()
+	third_person_arm.name = "ThirdPersonSpringArm"
+	third_person_arm.spring_length = 4.3
+	third_person_arm.margin = 0.18
+	third_person_arm.collision_mask = 1
+	third_person_arm.position = Vector3(0.48, -0.02, 0.0)
+	head_node.add_child(third_person_arm)
+	third_person_camera = Camera3D.new()
+	third_person_camera.name = "ThirdPersonCamera"
+	third_person_camera.fov = 73.0
+	third_person_arm.add_child(third_person_camera)
+	firefighter_avatar = FirefighterAvatar3D.new()
+	firefighter_avatar.name = "VisibleFirefighter"
+	add_child(firefighter_avatar)
+	firefighter_avatar.visible = false
+
+func set_third_person(enabled: bool) -> void:
+	third_person_enabled = enabled
+	if firefighter_avatar != null:
+		firefighter_avatar.visible = enabled
+	if held_tools != null:
+		held_tools.visible = not enabled and not cinematic_mode_enabled
+	if GameState.current_phase == ToolEnums.GamePhase.ACTIVE_FPS:
+		activate_fps_camera()
+	EventBus.educational_toast.emit("KAMERA: TPP - di belakang karakter [V]" if enabled else "KAMERA: FPS - sudut pandang mata [V]", false)
+
+func get_active_player_camera() -> Camera3D:
+	return third_person_camera if third_person_enabled else camera_node
