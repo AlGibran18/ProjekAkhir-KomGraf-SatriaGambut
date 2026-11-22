@@ -172,7 +172,9 @@ func _simulate_tick() -> void:
 				var wind_offset: Vector2 = Vector2(n_pos - pos).normalized()
 				var wind_alignment: float = maxf(0.0, wind_offset.dot(GameState.wind_direction))
 				var risk_factor: float = clampf(n_cell.pfvi_score / 300.0, 0.0, 1.0)
-				var base_chance: float = (0.03 + (wind_alignment * 0.14) + (risk_factor * 0.14)) * GameState.spread_multiplier
+				var wind_strength: float = clampf(GameState.wind_speed_kmh / 15.0, 0.35, 2.0)
+				var rain_suppression: float = clampf(1.0 - GameState.global_rainfall_rate * 0.065, 0.3, 1.0)
+				var base_chance: float = (0.03 + (wind_alignment * 0.14 * wind_strength) + (risk_factor * 0.14)) * GameState.spread_multiplier * rain_suppression
 
 				if n_cell.soil_moisture < 0.42 and randf() < base_chance:
 					pending_ignitions.append(n_pos)
@@ -189,7 +191,7 @@ func _simulate_tick() -> void:
 				var sub_cell: PeatCellData = cells[sub_pos]
 				if sub_cell.has_ember() or sub_cell.is_firebreak or sub_cell.has_well:
 					continue
-				if sub_cell.soil_moisture < 0.28 and randf() < (0.06 * GameState.spread_multiplier):
+				if sub_cell.soil_moisture < 0.28 and randf() < (0.06 * GameState.spread_multiplier * clampf(1.0 - GameState.global_rainfall_rate * 0.05, 0.3, 1.0)):
 					pending_ember_spreads.append(sub_pos)
 
 	for ignite_pos in pending_ignitions:
