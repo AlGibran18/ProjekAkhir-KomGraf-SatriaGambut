@@ -9,6 +9,7 @@ var roof_mat: Material
 var glass_mat: Material
 var accent: Material
 var floor_mat: Material
+var status_light: OmniLight3D
 
 func _ready() -> void:
 	wall = _material(Color(0.38, 0.43, 0.37))
@@ -38,6 +39,8 @@ func _build_outpost() -> void:
 		_visual("WindowFrame", Vector3(side_x, 2.10, -0.20), Vector3(0.23, 1.00, 1.80), timber)
 		_visual("WindowBlueGlass", Vector3(side_x + (0.14 if side_x > 0 else -0.14), 2.10, -0.20), Vector3(0.025, 0.75, 1.52), glass_mat)
 	_visual("SignBoard", Vector3(0, 2.98, -3.68), Vector3(2.90, 0.31, 0.10), accent)
+	_sign("POSKO SATRIA GAMBUT", Vector3(0, 2.98, -3.765), 21)
+	_sign("PETA OPERASI  |  BRIEFING", Vector3(0, 2.44, 3.29), 19)
 	# Trestle legs + field planning table; east side leaves a clear walk path.
 	_solid("DeskTop", Vector3(1.75, 0.90, 1.10), Vector3(1.75, 0.12, 0.88), timber)
 	_solid("DeskLegA", Vector3(1.12, 0.47, 0.82), Vector3(0.12, 0.82, 0.12), dark_mat())
@@ -59,6 +62,13 @@ func _build_outpost() -> void:
 	light.omni_range = 6.2
 	light.shadow_enabled = false
 	add_child(light)
+	status_light = OmniLight3D.new()
+	status_light.name = "ObservationPostStatus"
+	status_light.position = Vector3(0, 2.75, -3.85)
+	status_light.omni_range = 4.0
+	status_light.light_energy = 0.48
+	status_light.shadow_enabled = false
+	add_child(status_light)
 
 func _material(color: Color) -> Material:
 	var m: StandardMaterial3D = StandardMaterial3D.new()
@@ -96,3 +106,20 @@ func _solid(part_name: String, pos: Vector3, dimensions: Vector3, mat: Material)
 	collision.shape = shape
 	body.add_child(collision)
 	add_child(body)
+
+func _process(_delta: float) -> void:
+	if status_light == null:
+		return
+	status_light.light_color = Color(0.24, 1.0, 0.63) if GameState.station_safe else Color(1.0, 0.18, 0.12)
+	status_light.light_energy = 0.48 if GameState.station_safe else (0.55 + 0.35 * sin(float(Time.get_ticks_msec()) * 0.012))
+
+func _sign(message: String, where: Vector3, font_size_px: int) -> void:
+	var label: Label3D = Label3D.new()
+	label.text = message
+	label.font_size = font_size_px
+	label.pixel_size = 0.0033
+	label.position = where
+	label.rotation.y = PI
+	label.modulate = Color(0.96, 0.98, 0.91)
+	label.no_depth_test = true
+	add_child(label)
