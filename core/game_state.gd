@@ -78,6 +78,7 @@ var last_new_record: bool = false
 const RECORDS_PATH: String = "user://satria_gambut_records.cfg"
 const DISPLAY_SETTINGS_PATH: String = "user://satria_gambut_display.cfg"
 var fullscreen_enabled: bool = false
+var _display_initialized: bool = false
 var max_wells_allowed: int = 2
 
 var mouse_sensitivity: float = 0.0022
@@ -223,6 +224,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func set_fullscreen(enabled: bool) -> void:
 	fullscreen_enabled = enabled
+	_display_initialized = false
 	# Switch only after the triggering UI event completes.
 	call_deferred("_apply_saved_display")
 	var config: ConfigFile = ConfigFile.new()
@@ -240,6 +242,10 @@ func _load_display_settings() -> void:
 	# The main menu applies this after its controls have entered the scene tree.
 
 func _apply_saved_display() -> void:
+	# Do not reset a window the user maximized, resized, or moved manually.
+	# The display mode is applied once at startup and again only for F11/menu toggles.
+	if _display_initialized:
+		return
 	var window: Window = get_window()
 	if window == null:
 		return
@@ -258,6 +264,7 @@ func _apply_saved_display() -> void:
 	# Important: menus must never inherit a captured cursor after scene switches.
 	if current_phase != ToolEnums.GamePhase.ACTIVE_FPS:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_display_initialized = true
 	window.grab_focus()
 
 func set_graphics_quality(quality: GraphicsQuality) -> void:
