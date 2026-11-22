@@ -12,6 +12,7 @@ extends Node3D
 
 var has_transitioned_from_planning: bool = false
 var mission_director: MissionDirector
+var weather_ambience: WeatherAmbience3D
 
 func _ready() -> void:
 	grid_simulator.initialize_level(GameState.current_level_index)
@@ -21,6 +22,10 @@ func _ready() -> void:
 	var spawn_x: float = float(grid_simulator.grid_width / 2) * GameState.CELL_SIZE
 	var spawn_z: float = 1.0 * GameState.CELL_SIZE
 	player.set_spawn_position(Vector3(spawn_x, 0.25, spawn_z))
+
+	weather_ambience = WeatherAmbience3D.new()
+	weather_ambience.initialize(player, simulation_view_3d)
+	simulation_view_3d.add_child(weather_ambience)
 
 	hud.setup_hud(grid_simulator, player)
 	planning_overlay.setup_planning(grid_simulator)
