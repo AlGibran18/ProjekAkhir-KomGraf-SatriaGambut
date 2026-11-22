@@ -12,6 +12,7 @@ extends Node3D
 var allow_dynamic_light: bool = false
 var pulse_time: float = 0.0
 var is_thermal_ember: bool = false
+var last_intensity: float = 1.0
 
 func _ready() -> void:
 	EventBus.graphics_quality_changed.connect(_on_graphics_quality_changed)
@@ -32,6 +33,11 @@ func update_state(cell: PeatCellData, thermal_active: bool, wind_dir: Vector2, c
 	allow_dynamic_light = can_use_light
 	var burning: bool = cell.is_burning()
 	var has_ember: bool = cell.has_ember()
+	last_intensity = clampf(cell.surface_fire / 100.0, 0.2, 1.0)
+	_apply_quality_ratio()
+	fire_light.light_energy = lerpf(0.8, 2.7, last_intensity)
+	fire_light.omni_range = lerpf(3.8, 7.0, last_intensity)
+	var wind_speed: float = GameState.wind_speed_kmh / 12.0
 
 	flame_particles.emitting = burning
 	thick_smoke_particles.emitting = burning
@@ -39,11 +45,11 @@ func update_state(cell: PeatCellData, thermal_active: bool, wind_dir: Vector2, c
 
 	var smoke_mat: ParticleProcessMaterial = thick_smoke_particles.process_material as ParticleProcessMaterial
 	if smoke_mat != null:
-		smoke_mat.gravity = Vector3(wind_dir.x * 2.4, 2.2, wind_dir.y * 2.4)
+		smoke_mat.gravity = Vector3(wind_dir.x * 2.4 * wind_speed, 2.2, wind_dir.y * 2.4 * wind_speed)
 
 	var sub_mat: ParticleProcessMaterial = subsurface_smoke_particles.process_material as ParticleProcessMaterial
 	if sub_mat != null:
-		sub_mat.gravity = Vector3(wind_dir.x * 1.1, 1.4, wind_dir.y * 1.1)
+		sub_mat.gravity = Vector3(wind_dir.x * 1.1 * wind_speed, 1.4, wind_dir.y * 1.1 * wind_speed)
 
 	is_thermal_ember = thermal_active and has_ember
 	ember_glow_mesh.visible = has_ember and (thermal_active or not burning)
@@ -65,6 +71,6 @@ func _apply_quality_ratio() -> void:
 			ratio = 0.75
 		GameState.GraphicsQuality.HIGH:
 			ratio = 1.0
-	flame_particles.amount_ratio = ratio
-	thick_smoke_particles.amount_ratio = ratio
+	flame_particles.amount_ratio = ratio * last_intensity
+	thick_smoke_particles.amount_ratio = ratio * clampf(last_intensity + 0.25, 0.0, 1.0)
 	subsurface_smoke_particles.amount_ratio = ratio
