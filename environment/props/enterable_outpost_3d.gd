@@ -14,7 +14,10 @@ var door_hinge: Node3D
 var door_tween: Tween
 var door_open: bool = false
 var door_target_player: Node3D
-var doorway_blocker: CollisionShape3D
+var door_leaf_collision: CollisionShape3D
+var door_prompt_layer: CanvasLayer
+var door_prompt: Label
+const DOOR_INTERACT_DISTANCE: float = 3.8
 
 func _ready() -> void:
 	wall = _material(Color(0.38, 0.43, 0.37))
@@ -24,6 +27,7 @@ func _ready() -> void:
 	accent = _material(Color(0.95, 0.71, 0.15))
 	floor_mat = _material(Color(0.19, 0.20, 0.19))
 	_build_outpost()
+	_create_door_prompt()
 	set_physics_process(true)
 
 func _build_outpost() -> void:
@@ -40,7 +44,6 @@ func _build_outpost() -> void:
 	# Hinged 2.1 m door with a real collision box. Opens toward the west wall
 	# before the player reaches it, keeping the center of the entrance clear.
 	_create_animated_door()
-	_create_doorway_blocker()
 	_solid("Roof", Vector3(0, 3.27, 0), Vector3(7.80, 0.26, 7.90), roof_mat)
 	_visual("RoofRidge", Vector3(0, 3.45, 0), Vector3(0.32, 0.20, 8.0), accent)
 	for side_x in [-3.42, 3.42]:
@@ -102,6 +105,7 @@ func _create_animated_door() -> void:
 	shape.size = Vector3(2.10, 2.24, 0.11)
 	collision.shape = shape
 	leaf.add_child(collision)
+	door_leaf_collision = collision
 	# Highlight strips and door latch follow the hinge.
 	var knob: MeshInstance3D = MeshInstance3D.new()
 	knob.name = "DoorLatch"
@@ -121,43 +125,86 @@ func _create_animated_door() -> void:
 	marking.position = Vector3(0, 0.36, 0)
 	leaf.add_child(marking)
 	# Small outer sign to communicate that this entrance opens automatically.
-	_sign("PINTU OTOMATIS", Vector3(0, 2.49, -3.77), 16)
+	_sign("PINTU MANUAL [F]", Vector3(0, 2.49, -3.77), 16)
 
-# Dedicated physical gate: an unfinished opening animation cannot be walked through.
-func _create_doorway_blocker() -> void:
-	var gate: StaticBody3D = StaticBody3D.new()
-	gate.name = "ClosedDoorwayGate"
-	gate.collision_layer = 1
-	gate.collision_mask = 1
-	gate.position = Vector3(0.0, 1.12, -3.48)
-	add_child(gate)
-	doorway_blocker = CollisionShape3D.new()
-	doorway_blocker.name = "GateCollision"
-	var shape: BoxShape3D = BoxShape3D.new()
-	shape.size = Vector3(2.04, 2.24, 0.16)
-	doorway_blocker.shape = shape
-	doorway_blocker.disabled = false
-	gate.add_child(doorway_blocker)
+# Manual interaction: F when close to the door in either FPS or TPP.
+# Do not use a second invisible doorway blocker: the door leaf itself is solid.
+func _create_door_prompt() -> void:
+	door_prompt_layer = CanvasLayer.new()
+	door_prompt_layer.layer = 7
+	door_prompt_layer.name = "DoorInteractionPrompt"
+	add_child(door_prompt_layer)
+	var box: PanelContainer = PanelContainer.new()
+	box.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	box.offset_left = -115.0
+	box.offset_right = 115.0
+	box.offset_top = -148.0
+	box.offset_bottom = -111.0
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = Color(0.025, 0.10, 0.11, 0.88)
+	style.border_color = Color(0.27, 0.92, 0.71)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(9)
+	box.add_theme_stylebox_override("panel", style)
+	door_prompt_layer.add_child(box)
+	door_prompt = Label.new()
+	door_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	door_prompt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	door_prompt.add_theme_font_size_override("font_size", 15)
+	door_prompt.add_theme_color_override("font_color", Color(0.92, 1.0, 0.90))
+	door_prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(door_prompt)
+	door_prompt_layer.visible = false
 
-func _player_is_inside_outpost() -> bool:
+func _door_position() -> Vector3:
+	return to_global(Vector3(0.0, 0.0, -3.48))
+
+func _is_player_near_door() -> bool:
 	if door_target_player == null:
 		return false
-	var relative: Vector3 = to_local(door_target_player.global_position)
-	return absf(relative.x) < 3.30 and relative.z > -3.40 and relative.z < 3.35
+	var delta_pos: Vector3 = door_target_player.global_position - _door_position()
+	delta_pos.y = 0.0
+	return delta_pos.length() <= DOOR_INTERACT_DISTANCE
+
+func _player_is_in_threshold() -> bool:
+	if door_target_player == null:
+		return false
+	var pos: Vector3 = to_local(door_target_player.global_position)
+	# Never close the collider across the character standing in the doorway.
+	return absf(pos.x) < 1.45 and absf(pos.z + 3.48) < 1.0
+
+func _unhandled_input(event: InputEvent) -> void:
+	if GameState.current_phase != ToolEnums.GamePhase.ACTIVE_FPS:
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F:
+		if not _is_player_near_door():
+			return
+		if door_tween != null and door_tween.is_running():
+			return
+		if door_open and _player_is_in_threshold():
+			EventBus.educational_toast.emit("Mundur sedikit dari ambang pintu sebelum menutup.", false)
+			get_viewport().set_input_as_handled()
+			return
+		_set_door_open(not door_open)
+		AudioManager.play_sfx("click", -9.0)
+		get_viewport().set_input_as_handled()
 
 func _physics_process(_delta: float) -> void:
-	if door_hinge == null or GameState.current_phase != ToolEnums.GamePhase.ACTIVE_FPS:
-		return
 	if door_target_player == null or not is_instance_valid(door_target_player):
-		door_target_player = get_tree().current_scene.get_node_or_null("PlayerController3D")
-	if door_target_player == null:
+		var scene: Node = get_tree().current_scene
+		if scene != null:
+			door_target_player = scene.get_node_or_null("PlayerController3D")
+	if door_prompt_layer == null:
 		return
-	var distance: float = door_target_player.global_position.distance_to(global_position + Vector3(0, 0, -3.48))
-	# Hysteresis stops jitter and prevents the door closing on the player.
-	if not door_open and distance <= 4.2:
-		_set_door_open(true)
-	elif door_open and distance >= 6.3 and not _player_is_inside_outpost():
-		_set_door_open(false)
+	var active: bool = GameState.current_phase == ToolEnums.GamePhase.ACTIVE_FPS
+	door_prompt_layer.visible = active and _is_player_near_door()
+	if not door_prompt_layer.visible:
+		return
+	if door_tween != null and door_tween.is_running():
+		door_prompt.text = "PINTU BERGERAK..."
+	else:
+		door_prompt.text = "[F] TUTUP PINTU" if door_open else "[F] BUKA PINTU"
 
 func _set_door_open(open: bool) -> void:
 	if door_hinge == null or open == door_open:
@@ -165,16 +212,17 @@ func _set_door_open(open: bool) -> void:
 	door_open = open
 	if door_tween != null and door_tween.is_running():
 		door_tween.kill()
+	# Closed: the physical leaf blocks the entrance. Open: collision is
+	# disabled after swing so it cannot leave an invisible obstacle.
+	if not open and door_leaf_collision != null:
+		door_leaf_collision.set_deferred("disabled", false)
 	door_tween = create_tween()
 	door_tween.set_trans(Tween.TRANS_CUBIC)
 	door_tween.set_ease(Tween.EASE_IN_OUT)
-	# Restore collision before closing; remove it only after the opening finishes.
-	if not open and doorway_blocker != null:
-		doorway_blocker.set_deferred("disabled", false)
 	door_tween.tween_property(door_hinge, "rotation:y", deg_to_rad(-100.0) if open else 0.0, 0.85)
 	door_tween.tween_callback(func() -> void:
-		if doorway_blocker != null and door_open == open:
-			doorway_blocker.set_deferred("disabled", open)
+		if door_leaf_collision != null and door_open == open:
+			door_leaf_collision.set_deferred("disabled", open)
 	)
 
 func _material(color: Color) -> Material:
