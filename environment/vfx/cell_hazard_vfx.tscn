@@ -110,16 +110,16 @@ script = ExtResource("1_vfx")
 [node name="FlameParticles" type="GPUParticles3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
 emitting = false
-amount = 24
-lifetime = 0.9
+amount = 35
+lifetime = 1.1
 process_material = SubResource("ParticleProcessMaterial_flame")
 draw_pass_1 = SubResource("QuadMesh_flame")
 
 [node name="ThickSmokeParticles" type="GPUParticles3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
 emitting = false
-amount = 18
-lifetime = 2.2
+amount = 26
+lifetime = 2.5
 process_material = SubResource("ParticleProcessMaterial_thick_smoke")
 draw_pass_1 = SubResource("QuadMesh_smoke")
 
@@ -140,8 +140,8 @@ mesh = SubResource("BoxMesh_ember")
 [node name="SteamBurstParticles" type="GPUParticles3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
 emitting = false
-amount = 26
-lifetime = 0.9
+amount = 48
+lifetime = 1.0
 one_shot = true
 explosiveness = 0.85
 process_material = SubResource("ParticleProcessMaterial_steam")
