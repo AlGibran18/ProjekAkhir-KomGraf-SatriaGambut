@@ -19,6 +19,7 @@ var cinematic_capture: CinematicCapture
 var mission_telemetry: MissionTelemetry
 
 func _ready() -> void:
+	AudioManager.play_game_music()
 	grid_simulator.initialize_level(GameState.current_level_index)
 	simulation_view_3d.setup_view(grid_simulator)
 	player.set_grid_simulator(grid_simulator)
