@@ -84,12 +84,16 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	if tactical_map_open:
+		if firefighter_avatar != null:
+			firefighter_avatar.set_action_state(GameState.current_tool, false)
 		if grid_simulator != null:
 			grid_simulator.cancel_injection()
 		if held_tools != null:
 			held_tools.set_movement_state(false, false)
 		return
 	if GameState.current_phase != ToolEnums.GamePhase.ACTIVE_FPS:
+		if firefighter_avatar != null:
+			firefighter_avatar.set_action_state(GameState.current_tool, false)
 		if held_tools != null:
 			held_tools.set_movement_state(false, false)
 		return
@@ -145,6 +149,8 @@ func _physics_process(delta: float) -> void:
 
 	if held_tools != null:
 		held_tools.set_movement_state(is_moving, is_acting)
+	if firefighter_avatar != null:
+		firefighter_avatar.set_action_state(GameState.current_tool, is_acting)
 
 func _update_camera_feel(delta: float, input_dir: Vector2, is_moving: bool, is_sprinting: bool) -> void:
 	var target_head_y: float = 1.60
@@ -253,6 +259,7 @@ func _create_third_person_rig() -> void:
 	firefighter_avatar.name = "VisibleFirefighter"
 	add_child(firefighter_avatar)
 	firefighter_avatar.visible = false
+	firefighter_avatar.apply_outfit()
 
 func set_third_person(enabled: bool) -> void:
 	third_person_enabled = enabled
