@@ -78,6 +78,9 @@ var last_new_record: bool = false
 const RECORDS_PATH: String = "user://satria_gambut_records.cfg"
 const DISPLAY_SETTINGS_PATH: String = "user://satria_gambut_display.cfg"
 signal outfit_changed
+signal guide_display_changed(enabled: bool)
+const GUIDE_SETTINGS_PATH: String = "user://satria_gambut_guide.cfg"
+var show_world_guide_arrow: bool = true
 const OUTFIT_PATH: String = "user://satria_gambut_outfit.cfg"
 const UNIFORM_NAMES: Array[String] = ["Merah Rescue", "Oranye Satgas", "Hijau Rimba", "Biru Operasi"]
 const UNIFORM_COLORS: Array[Color] = [
@@ -114,6 +117,7 @@ func _ready() -> void:
 	load_level_config(0)
 	_load_display_settings()
 	_load_outfit()
+	_load_guide_settings()
 
 func load_level_config(level_idx: int) -> void:
 	current_level_index = clampi(level_idx, 0, LEVEL_CONFIGS.size() - 1)
@@ -317,3 +321,17 @@ func _load_outfit() -> void:
 		return
 	uniform_index = clampi(int(config.get_value("outfit", "uniform", 0)), 0, UNIFORM_NAMES.size() - 1)
 	helmet_index = clampi(int(config.get_value("outfit", "helmet", 1)), 0, HELMET_NAMES.size() - 1)
+
+func set_world_guide_arrow_visible(enabled: bool) -> void:
+	show_world_guide_arrow = enabled
+	var cfg: ConfigFile = ConfigFile.new()
+	cfg.set_value("guide", "world_arrow", enabled)
+	var result: Error = cfg.save(GUIDE_SETTINGS_PATH)
+	if result != OK:
+		push_warning("Pengaturan panduan tidak tersimpan: %d" % int(result))
+	guide_display_changed.emit(enabled)
+
+func _load_guide_settings() -> void:
+	var cfg: ConfigFile = ConfigFile.new()
+	if cfg.load(GUIDE_SETTINGS_PATH) == OK:
+		show_world_guide_arrow = bool(cfg.get_value("guide", "world_arrow", true))
