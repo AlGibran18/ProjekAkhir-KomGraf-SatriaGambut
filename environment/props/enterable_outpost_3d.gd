@@ -194,7 +194,7 @@ func _physics_process(delta: float) -> void:
 	var protected_zone: bool = distance < DOOR_CLOSE_RADIUS or _player_inside_post()
 	# Reopen immediately if the player returns during closing; never let a
 	# moving collider strike the character.
-	if not door_open and (distance <= DOOR_OPEN_RADIUS or _player_inside_post()):
+	if not door_open and (distance <= DOOR_OPEN_RADIUS or _player_inside_post() or (door_transitioning and protected_zone)):
 		_set_door_open(true)
 	if protected_zone:
 		door_clear_time = 0.0
