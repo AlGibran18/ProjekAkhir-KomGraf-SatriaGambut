@@ -60,7 +60,6 @@ offset_right = 350.0
 offset_bottom = 310.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_eval")
 
 [node name="VBox" type="VBoxContainer" parent="CenterPanel"]
 layout_mode = 2
@@ -74,7 +73,6 @@ horizontal_alignment = 1
 
 [node name="BannerPanel" type="PanelContainer" parent="CenterPanel/VBox"]
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_banner")
 
 [node name="BannerLabel" type="Label" parent="CenterPanel/VBox/BannerPanel"]
 layout_mode = 2

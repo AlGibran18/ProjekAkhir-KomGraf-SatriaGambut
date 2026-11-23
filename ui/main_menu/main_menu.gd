@@ -247,192 +247,21 @@ func _save_wardrobe() -> void:
 	GameState.set_outfit(uniform_choice.selected, helmet_choice.selected)
 	AudioManager.play_sfx("click")
 
-# V8.6: visual redesign only. The original Satria Gambut logo texture,
-# scene destinations, navigation buttons and game settings are untouched.
 func _apply_modern_menu_design() -> void:
-	var base: ColorRect = $Background
-	base.color = Color(0.017, 0.039, 0.047, 1.0)
-	_add_menu_ambient_accents()
-
-	var right_panel: PanelContainer = $MainMargin/MainHBox/RightPanel
-	left_panel.add_theme_stylebox_override("panel", _menu_panel_style(Color(0.24, 0.88, 0.69), true))
-	right_panel.add_theme_stylebox_override("panel", _menu_panel_style(Color(0.24, 0.58, 0.61), true))
-	var level_box: PanelContainer = $MainMargin/MainHBox/LeftPanel/VBox/LevelBox
-	level_box.add_theme_stylebox_override("panel", _menu_panel_style(Color(0.90, 0.69, 0.30), false))
-
-	var heading: Label = $MainMargin/MainHBox/LeftPanel/VBox/TitleLabel
-	heading.add_theme_font_size_override("font_size", 35)
-	heading.add_theme_color_override("font_color", Color(0.97, 0.82, 0.32))
-	heading.add_theme_color_override("font_shadow_color", Color(0.02, 0.17, 0.16, 0.65))
-	heading.add_theme_constant_override("shadow_offset_x", 1)
-	heading.add_theme_constant_override("shadow_offset_y", 3)
-	var subtitle: Label = $MainMargin/MainHBox/LeftPanel/VBox/SubtitleLabel
-	subtitle.add_theme_color_override("font_color", Color(0.66, 0.85, 0.79))
-	subtitle.add_theme_font_size_override("font_size", 13)
-	var level_title: Label = $MainMargin/MainHBox/LeftPanel/VBox/LevelBox/ContentVBox/SelectLabel
-	level_title.text = "01   /   PILIH OPERASI LAPANGAN"
-	level_title.add_theme_color_override("font_color", Color(1.0, 0.79, 0.36))
-	level_title.add_theme_font_size_override("font_size", 12)
-	level_desc_label.add_theme_color_override("font_color", Color(0.78, 0.89, 0.84))
-
-	_style_menu_button(btn_start, Color(0.12, 0.53, 0.39), true)
-	_style_menu_button(btn_guide, Color(0.10, 0.23, 0.26), false)
-	_style_menu_button(btn_settings, Color(0.10, 0.23, 0.26), false)
-	_style_menu_button(btn_credits, Color(0.10, 0.23, 0.26), false)
-	_style_menu_button(btn_quit, Color(0.29, 0.13, 0.15), false)
-	btn_start.text = "MULAI OPERASI    /    ▶"
-	btn_guide.text = "PANDUAN    •    PROSEDUR LAPANGAN"
-	btn_settings.text = "PENGATURAN    •    TAMPILAN & AUDIO"
-	btn_credits.text = "CREDITS    •    TIM PENGEMBANG"
-	btn_quit.text = "KELUAR DARI PERMAINAN"
-
+	btn_start.text = "MULAI OPERASI"
+	btn_guide.text = "PANDUAN"
+	btn_settings.text = "PENGATURAN"
+	btn_credits.text = "CREDITS"
+	btn_quit.text = "KELUAR"
 	var wardrobe_button: Button = $MainMargin/MainHBox/LeftPanel/VBox/BtnWardrobe
-	_style_menu_button(wardrobe_button, Color(0.18, 0.35, 0.29), false)
-	wardrobe_button.text = "PERSONALISASI    •    HELM & SERAGAM"
-	_style_menu_option(level_option)
-
-	var fact: Label = $MainMargin/MainHBox/RightPanel/VBox/FactLabel
-	fact.add_theme_color_override("font_color", Color(0.68, 0.85, 0.79))
-	fact.add_theme_font_size_override("font_size", 13)
-	# LogoTexture is deliberately not changed or replaced.
-	for panel in [guide_modal, settings_modal, credits_modal]:
-		panel.add_theme_stylebox_override("panel", _menu_panel_style(Color(0.32, 0.89, 0.75), true))
-	for title in [
-		$GuideModal/VBox/Title,
-		$SettingsModal/VBox/Title,
-		$CreditsModal/VBox/Title
-	]:
-		(title as Label).add_theme_color_override("font_color", Color(0.98, 0.81, 0.39))
-		(title as Label).add_theme_font_size_override("font_size", 22)
-	for item in [
-		$GuideModal/VBox/BtnCloseGuide,
-		$SettingsModal/VBox/BtnCloseSettings,
-		$CreditsModal/VBox/BtnCloseCredits
-	]:
-		_style_menu_button(item as Button, Color(0.14, 0.49, 0.40), true)
-	_style_menu_option(quality_option)
-	if display_option != null:
-		_style_menu_option(display_option)
-	if guide_display_checkbox != null:
-		guide_display_checkbox.add_theme_color_override("font_color", Color(0.78, 0.96, 0.85))
-		guide_display_checkbox.add_theme_font_size_override("font_size", 12)
-	for slider in [sens_slider, vol_slider]:
-		_style_menu_slider(slider)
+	wardrobe_button.text = "HELM & SERAGAM"
+	for title in [$GuideModal/VBox/Title, $SettingsModal/VBox/Title, $CreditsModal/VBox/Title]:
+		(title as Label).add_theme_font_override("font", UiStyle.title_font())
+		(title as Label).add_theme_color_override("font_color", UiStyle.AMBER)
+		(title as Label).add_theme_font_size_override("font_size", 32)
 	for modal_body in [$GuideModal/VBox/Body, $CreditsModal/VBox/Body]:
-		(modal_body as Label).add_theme_color_override("font_color", Color(0.82, 0.92, 0.89))
-		(modal_body as Label).add_theme_font_size_override("font_size", 13)
-	# The wardrobe dialog is also restyled without replacing its controls.
-	if wardrobe_dialog != null:
-		wardrobe_dialog.add_theme_stylebox_override("panel", _menu_panel_style(Color(0.33, 0.85, 0.66), true))
-		_style_menu_option(uniform_choice)
-		_style_menu_option(helmet_choice)
-	modal_backdrop.color = Color(0.007, 0.025, 0.031, 0.87)
-	_animate_menu_intro()
-
-func _menu_panel_style(accent: Color, prominent: bool) -> StyleBoxFlat:
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = Color(0.033, 0.080, 0.093, 0.96) if prominent else Color(0.062, 0.125, 0.132, 0.92)
-	style.border_color = Color(accent.r, accent.g, accent.b, 0.75)
-	style.set_border_width_all(2 if prominent else 1)
-	style.set_corner_radius_all(19 if prominent else 13)
-	style.content_margin_left = 22 if prominent else 16
-	style.content_margin_right = 22 if prominent else 16
-	style.content_margin_top = 18 if prominent else 12
-	style.content_margin_bottom = 18 if prominent else 12
-	style.shadow_color = Color(0.0, 0.0, 0.0, 0.38)
-	style.shadow_size = 14 if prominent else 8
-	return style
-
-func _button_style(background_color: Color, border_color: Color) -> StyleBoxFlat:
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = background_color
-	style.border_color = border_color
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(10)
-	style.content_margin_left = 14
-	style.content_margin_right = 14
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
-	return style
-
-func _style_menu_button(button: Button, base_color: Color, emphasized: bool) -> void:
-	if button == null:
-		return
-	button.add_theme_stylebox_override("normal", _button_style(base_color, base_color.lightened(0.30)))
-	button.add_theme_stylebox_override("hover", _button_style(base_color.lightened(0.16), Color(0.45, 0.98, 0.75)))
-	button.add_theme_stylebox_override("pressed", _button_style(base_color.darkened(0.18), Color(0.90, 0.79, 0.35)))
-	button.add_theme_stylebox_override("focus", _button_style(Color(0.0, 0.0, 0.0, 0.0), Color(0.66, 1.0, 0.85)))
-	button.add_theme_color_override("font_color", Color(0.94, 0.98, 0.95))
-	button.add_theme_color_override("font_hover_color", Color(1.0, 0.98, 0.80))
-	button.add_theme_font_size_override("font_size", 16 if emphasized else 13)
-	button.custom_minimum_size.y = 49 if emphasized else 39
-	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	button.pivot_offset = button.size / 2.0
-	button.mouse_entered.connect(func() -> void:
-		if not is_instance_valid(button):
-			return
-		var tween: Tween = create_tween()
-		tween.tween_property(button, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.12)
-	)
-	button.mouse_exited.connect(func() -> void:
-		if not is_instance_valid(button):
-			return
-		var tween: Tween = create_tween()
-		tween.tween_property(button, "modulate", Color(0.92, 0.97, 0.95, 1.0), 0.14)
-	)
-
-func _style_menu_option(option: OptionButton) -> void:
-	if option == null:
-		return
-	var base_color: Color = Color(0.07, 0.17, 0.19)
-	option.add_theme_stylebox_override("normal", _button_style(base_color, Color(0.22, 0.65, 0.56)))
-	option.add_theme_stylebox_override("hover", _button_style(base_color.lightened(0.11), Color(0.42, 0.92, 0.74)))
-	option.add_theme_stylebox_override("pressed", _button_style(base_color.darkened(0.1), Color(0.35, 0.80, 0.65)))
-	option.add_theme_color_override("font_color", Color(0.92, 0.97, 0.93))
-	option.custom_minimum_size.y = 39
-
-func _style_menu_slider(slider: HSlider) -> void:
-	var track: StyleBoxFlat = StyleBoxFlat.new()
-	track.bg_color = Color(0.09, 0.26, 0.28)
-	track.set_corner_radius_all(5)
-	track.content_margin_top = 4
-	track.content_margin_bottom = 4
-	var filled: StyleBoxFlat = StyleBoxFlat.new()
-	filled.bg_color = Color(0.27, 0.86, 0.68)
-	filled.set_corner_radius_all(5)
-	filled.content_margin_top = 4
-	filled.content_margin_bottom = 4
-	slider.add_theme_stylebox_override("slider", track)
-	slider.add_theme_stylebox_override("grabber_area", filled)
-	slider.add_theme_stylebox_override("grabber_area_highlight", filled)
-
-func _add_menu_ambient_accents() -> void:
-	# Static decorative layers; they cannot intercept mouse input.
-	var strip: ColorRect = ColorRect.new()
-	strip.name = "AccentStripeTop"
-	strip.color = Color(0.21, 0.78, 0.62, 0.35)
-	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	strip.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	strip.custom_minimum_size.y = 3
-	add_child(strip)
-	move_child(strip, 1)
-	strip.offset_bottom = 3
-	var ribbon: ColorRect = ColorRect.new()
-	ribbon.name = "AmbientBottomRibbon"
-	ribbon.color = Color(0.10, 0.33, 0.33, 0.20)
-	ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ribbon.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	add_child(ribbon)
-	move_child(ribbon, 2)
-	ribbon.offset_top = -58
-
-func _animate_menu_intro() -> void:
-	left_panel.modulate.a = 0.0
-	var right_panel: PanelContainer = $MainMargin/MainHBox/RightPanel
-	right_panel.modulate.a = 0.0
-	var tween: Tween = create_tween()
-	tween.tween_property(left_panel, "modulate:a", 1.0, 0.34)
-	tween.parallel().tween_property(right_panel, "modulate:a", 1.0, 0.50).set_delay(0.10)
+		(modal_body as Label).add_theme_font_size_override("font_size", 17)
+	modal_backdrop.color = Color(0.01, 0.02, 0.012, 0.88)
 
 # The cinematic presentation reuses all original MainMenu controls,
 # dialogs, callbacks, settings, level data, and the unchanged logo texture.

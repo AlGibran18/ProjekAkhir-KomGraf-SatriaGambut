@@ -1,40 +1,37 @@
-# ui/hud/hud.gd - Pengendali antarmuka First-Person (HUD): crosshair dinamis, bar injeksi, minimap real-time, toast animasi halus, dan layout anti-tabrakan.
+# ui/hud/hud.gd - HUD gameplay ringkas bergaya game modern: radar bulat, hotbar alat, tangki air, tag petak kontekstual, dan toast papan kayu jungle.
 class_name HUD
 extends CanvasLayer
 
-@onready var water_progress_bar: ProgressBar = $RootMargin/MainContainer/TopRow/TopLeftBox/TopBar/WaterPanel/HBox/WaterProgressBar
-@onready var water_label: Label = $RootMargin/MainContainer/TopRow/TopLeftBox/TopBar/WaterPanel/HBox/WaterLabel
-@onready var weather_label: Label = $RootMargin/MainContainer/TopRow/TopLeftBox/TopBar/WeatherPanel/WeatherLabel
-@onready var stats_label: Label = $RootMargin/MainContainer/TopRow/TopLeftBox/TopBar/StatsPanel/StatsLabel
+const MARGIN: float = 20.0
+const RADAR_SIZE: float = 188.0
 
-@onready var toast_panel: PanelContainer = $RootMargin/MainContainer/TopRow/TopLeftBox/ToastPanel
-@onready var toast_label: Label = $RootMargin/MainContainer/TopRow/TopLeftBox/ToastPanel/ToastLabel
-@onready var well_prompt_panel: PanelContainer = $RootMargin/MainContainer/TopRow/TopLeftBox/WellPromptPanel
-
-@onready var minimap_canvas: Control = $RootMargin/MainContainer/TopRow/MiniMapPanel/VBox/MiniMapCanvas
-
-@onready var crosshair_control: Control = $CenterCrosshair
-@onready var crosshair_reticle: Control = $CenterCrosshair/Reticle
-@onready var injection_panel: PanelContainer = $CenterCrosshair/InjectionPanel
-@onready var injection_bar: ProgressBar = $CenterCrosshair/InjectionPanel/VBox/InjectionBar
-
-@onready var thermal_visor: Panel = $ThermalVisor
-
-@onready var hover_panel: PanelContainer = $RootMargin/MainContainer/BottomRow/CellInfoPanel
-@onready var cell_coords_label: Label = $RootMargin/MainContainer/BottomRow/CellInfoPanel/VBox/CoordsLabel
-@onready var cell_stats_label: Label = $RootMargin/MainContainer/BottomRow/CellInfoPanel/VBox/CellStatsLabel
-@onready var cell_risk_label: Label = $RootMargin/MainContainer/BottomRow/CellInfoPanel/VBox/RiskLabel
-
-@onready var btn_sekat: Button = $RootMargin/MainContainer/BottomRow/ToolBar/BtnSekat
-@onready var btn_semprot: Button = $RootMargin/MainContainer/BottomRow/ToolBar/BtnSemprot
-@onready var btn_tombak: Button = $RootMargin/MainContainer/BottomRow/ToolBar/BtnTombak
-@onready var btn_thermal: Button = $RootMargin/MainContainer/BottomRow/ToolBar/BtnThermal
+var frame: Control
+var water_gauge: WaterGauge
+var tool_slots: Array[HudToolSlot] = []
+var tool_name_label: Label
+var toast_board: JungleBoard
+var toast_holder: CenterContainer
+var toast_label: Label
+var well_prompt: PanelContainer
+var hover_tag: PanelContainer
+var hover_title: Label
+var hover_detail: Label
+var crosshair_control: Control
+var crosshair_reticle: Control
+var injection_panel: PanelContainer
+var injection_bar: ProgressBar
+var thermal_visor: TextureRect
+var minimap_canvas: Control
+var radar_ring: Control
+var wind_label: Label
+var radar_caption: Label
 
 var grid_simulator: GridSimulator
 var player_node: Node3D
 var toast_timer: float = 0.0
 var minimap_timer: float = 0.0
 var proximity_timer: float = 0.0
+var weather_timer: float = 0.0
 var danger_strength: float = 0.0
 var danger_overlay: ColorRect
 var expanded_map: Control
@@ -44,46 +41,282 @@ var previous_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_CAPTURED
 var nav_cell: Vector2i = Vector2i(-1, -1)
 var nav_category: String = ""
 var nav_pulse: float = 0.0
-var modern_panel_lookup: Array[PanelContainer] = []
+var toast_tween: Tween
 
 func _ready() -> void:
-	# Subtle full-screen danger tint rendered behind the existing HUD widgets.
 	danger_overlay = ColorRect.new()
 	danger_overlay.name = "ProximityFireWarning"
 	danger_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	danger_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	danger_overlay.color = Color(0.85, 0.08, 0.025, 0.0)
 	add_child(danger_overlay)
-	move_child(danger_overlay, 0)
+	_build_thermal_visor()
+	frame = Control.new()
+	frame.name = "Frame"
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(frame)
+	frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_build_crosshair()
+	_build_radar()
+	_build_hotbar()
+	_build_water_gauge()
+	_build_toast()
+	_build_well_prompt()
+	_create_expanded_map()
 	EventBus.water_changed.connect(_on_water_changed)
 	EventBus.tool_selected.connect(_on_tool_selected)
 	EventBus.thermal_mode_toggled.connect(_on_thermal_mode_toggled)
 	EventBus.cell_hovered.connect(_on_cell_hovered)
-	EventBus.mission_stats_updated.connect(_on_mission_stats_updated)
 	EventBus.educational_toast.connect(_on_educational_toast)
 	EventBus.injection_progress_changed.connect(_on_injection_progress_changed)
 	EventBus.well_proximity_changed.connect(_on_well_proximity_changed)
 	EventBus.game_phase_changed.connect(_on_phase_changed)
-	minimap_canvas.draw.connect(_on_minimap_draw)
-	_create_expanded_map()
-	_style_modern_hud()
 	EventBus.navigator_target_changed.connect(_on_navigator_target_changed)
-
-	btn_sekat.pressed.connect(func() -> void: _select_tool(ToolEnums.ToolType.SEKAT_BAKAR))
-	btn_semprot.pressed.connect(func() -> void: _select_tool(ToolEnums.ToolType.SEMPROT_PERMUKAAN))
-	btn_tombak.pressed.connect(func() -> void: _select_tool(ToolEnums.ToolType.TOMBAK_GAMBUT))
-	btn_thermal.pressed.connect(func() -> void: _toggle_thermal())
-
 	_on_phase_changed(GameState.current_phase)
 	_update_weather_display()
 	_on_water_changed(GameState.current_water, GameState.max_water_capacity)
 	_on_tool_selected(GameState.current_tool)
 
-func setup_hud(simulator: GridSimulator, player: Node3D) -> void:
-	grid_simulator = simulator
-	player_node = player
-	_update_weather_display()
-	minimap_canvas.queue_redraw()
+func _make_label(text_value: String, font_size: int, color: Color, use_title_font: bool = false) -> Label:
+	var node: Label = Label.new()
+	node.text = text_value
+	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	node.add_theme_font_size_override("font_size", font_size)
+	node.add_theme_color_override("font_color", color)
+	node.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.7))
+	node.add_theme_constant_override("shadow_offset_y", 2)
+	if use_title_font:
+		node.add_theme_font_override("font", UiStyle.title_font())
+	return node
+
+func _pill_style(fill: Color, border: Color) -> StyleBoxFlat:
+	var style: StyleBoxFlat = UiStyle.rounded_box(fill, 22, border, 2)
+	style.content_margin_left = 18
+	style.content_margin_right = 18
+	style.content_margin_top = 6
+	style.content_margin_bottom = 8
+	style.shadow_color = Color(0, 0, 0, 0.4)
+	style.shadow_size = 6
+	style.shadow_offset = Vector2(0, 3)
+	return style
+
+func _build_thermal_visor() -> void:
+	thermal_visor = TextureRect.new()
+	thermal_visor.name = "ThermalVisor"
+	thermal_visor.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	thermal_visor.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	thermal_visor.stretch_mode = TextureRect.STRETCH_SCALE
+	var gradient: Gradient = Gradient.new()
+	gradient.set_color(0, Color(1.0, 0.25, 0.1, 0.0))
+	gradient.set_color(1, Color(1.0, 0.25, 0.1, 0.38))
+	gradient.set_offset(0, 0.55)
+	var tex: GradientTexture2D = GradientTexture2D.new()
+	tex.gradient = gradient
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(1.0, 1.0)
+	tex.width = 256
+	tex.height = 256
+	thermal_visor.texture = tex
+	thermal_visor.visible = false
+	add_child(thermal_visor)
+	thermal_visor.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+func _build_crosshair() -> void:
+	crosshair_control = Control.new()
+	crosshair_control.name = "CenterCrosshair"
+	crosshair_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	crosshair_control.set_anchors_preset(Control.PRESET_CENTER)
+	frame.add_child(crosshair_control)
+	crosshair_reticle = Control.new()
+	crosshair_reticle.name = "Reticle"
+	crosshair_reticle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	crosshair_control.add_child(crosshair_reticle)
+	crosshair_reticle.draw.connect(func() -> void:
+		crosshair_reticle.draw_circle(Vector2.ZERO, 2.4, Color.WHITE)
+		for quarter in range(4):
+			var start: float = float(quarter) * PI * 0.5 + 0.38
+			crosshair_reticle.draw_arc(Vector2.ZERO, 13.0, start, start + 0.8, 8, Color.WHITE, 2.6, true)
+	)
+	crosshair_reticle.queue_redraw()
+	hover_tag = PanelContainer.new()
+	hover_tag.name = "CellTag"
+	hover_tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hover_tag.position = Vector2(30, -22)
+	hover_tag.add_theme_stylebox_override("panel", _pill_style(Color(0.06, 0.045, 0.03, 0.86), UiStyle.WOOD))
+	hover_tag.visible = false
+	crosshair_control.add_child(hover_tag)
+	var tag_box: VBoxContainer = VBoxContainer.new()
+	tag_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tag_box.add_theme_constant_override("separation", -2)
+	hover_tag.add_child(tag_box)
+	hover_title = _make_label("", 20, UiStyle.CREAM, true)
+	hover_detail = _make_label("", 16, Color(0.86, 0.9, 0.82))
+	tag_box.add_child(hover_title)
+	tag_box.add_child(hover_detail)
+	injection_panel = PanelContainer.new()
+	injection_panel.name = "InjectionPanel"
+	injection_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	injection_panel.position = Vector2(-96, 34)
+	injection_panel.custom_minimum_size = Vector2(192, 0)
+	injection_panel.add_theme_stylebox_override("panel", _pill_style(Color(0.04, 0.09, 0.12, 0.88), UiStyle.WATER))
+	injection_panel.visible = false
+	crosshair_control.add_child(injection_panel)
+	var injection_box: VBoxContainer = VBoxContainer.new()
+	injection_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	injection_panel.add_child(injection_box)
+	var injection_title: Label = _make_label("Injeksi Air", 17, UiStyle.WATER, true)
+	injection_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	injection_box.add_child(injection_title)
+	injection_bar = ProgressBar.new()
+	injection_bar.custom_minimum_size = Vector2(0, 12)
+	injection_bar.show_percentage = false
+	injection_bar.add_theme_stylebox_override("fill", UiStyle.rounded_box(UiStyle.WATER, 8))
+	injection_box.add_child(injection_bar)
+
+func _build_radar() -> void:
+	var holder: Control = Control.new()
+	holder.name = "RadarHolder"
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(holder)
+	holder.anchor_left = 1.0
+	holder.anchor_right = 1.0
+	holder.offset_left = -(RADAR_SIZE + 28.0 + MARGIN)
+	holder.offset_right = -MARGIN
+	holder.offset_top = MARGIN - 4.0
+	holder.offset_bottom = MARGIN + RADAR_SIZE + 66.0
+	var disc_size: float = RADAR_SIZE
+	var holder_width: float = holder.offset_right - holder.offset_left
+	var clip: Panel = Panel.new()
+	clip.name = "RadarDisc"
+	clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	clip.position = Vector2((holder_width - disc_size) * 0.5, 10)
+	clip.size = Vector2(disc_size, disc_size)
+	clip.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+	clip.add_theme_stylebox_override("panel", UiStyle.rounded_box(Color.WHITE, int(disc_size)))
+	holder.add_child(clip)
+	minimap_canvas = Control.new()
+	minimap_canvas.name = "MiniMapCanvas"
+	minimap_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	clip.add_child(minimap_canvas)
+	minimap_canvas.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	minimap_canvas.draw.connect(_on_minimap_draw)
+	radar_ring = Control.new()
+	radar_ring.name = "RadarRing"
+	radar_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	radar_ring.position = clip.position
+	radar_ring.size = clip.size
+	holder.add_child(radar_ring)
+	radar_ring.draw.connect(func() -> void:
+		var c: Vector2 = radar_ring.size * 0.5
+		var r: float = radar_ring.size.x * 0.5
+		radar_ring.draw_arc(c, r + 3.0, 0.0, TAU, 64, Color(0, 0, 0, 0.4), 10.0, true)
+		radar_ring.draw_arc(c, r + 2.0, 0.0, TAU, 64, UiStyle.WOOD_DARK, 9.0, true)
+		radar_ring.draw_arc(c, r + 5.0, 0.0, TAU, 64, UiStyle.WOOD, 2.0, true)
+		radar_ring.draw_arc(c, r - 2.0, 0.0, TAU, 64, UiStyle.LEAF_DARK, 2.0, true)
+		radar_ring.draw_string(UiStyle.title_font(), Vector2(c.x - 6.0, 21.0), "U", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, UiStyle.AMBER)
+	)
+	radar_caption = _make_label("M  Peta     H  Pandu", 15, Color(0.9, 0.93, 0.8, 0.85))
+	radar_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	holder.add_child(radar_caption)
+	radar_caption.position = Vector2(0, disc_size + 18.0)
+	radar_caption.size = Vector2(holder_width, 20)
+	wind_label = _make_label("", 17, UiStyle.CREAM, true)
+	wind_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	holder.add_child(wind_label)
+	wind_label.position = Vector2(0, disc_size + 36.0)
+	wind_label.size = Vector2(holder_width, 24)
+
+func _build_hotbar() -> void:
+	var bar: HBoxContainer = HBoxContainer.new()
+	bar.name = "ToolHotbar"
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.alignment = BoxContainer.ALIGNMENT_CENTER
+	bar.add_theme_constant_override("separation", 14)
+	frame.add_child(bar)
+	bar.anchor_left = 0.5
+	bar.anchor_right = 0.5
+	bar.anchor_top = 1.0
+	bar.anchor_bottom = 1.0
+	bar.offset_left = -220.0
+	bar.offset_right = 220.0
+	bar.offset_top = -108.0
+	bar.offset_bottom = -12.0
+	var defs: Array = [
+		{"icon": HudToolSlot.Icon.TRENCH, "key": "1"},
+		{"icon": HudToolSlot.Icon.SPRAY, "key": "2"},
+		{"icon": HudToolSlot.Icon.LANCE, "key": "3"},
+		{"icon": HudToolSlot.Icon.THERMAL, "key": "Tab"}
+	]
+	for def in defs:
+		var slot: HudToolSlot = HudToolSlot.new()
+		slot.icon_kind = def["icon"]
+		slot.key_text = String(def["key"])
+		bar.add_child(slot)
+		tool_slots.append(slot)
+	tool_slots[0].slot_pressed.connect(func() -> void: _select_tool(ToolEnums.ToolType.SEKAT_BAKAR))
+	tool_slots[1].slot_pressed.connect(func() -> void: _select_tool(ToolEnums.ToolType.SEMPROT_PERMUKAAN))
+	tool_slots[2].slot_pressed.connect(func() -> void: _select_tool(ToolEnums.ToolType.TOMBAK_GAMBUT))
+	tool_slots[3].slot_pressed.connect(_toggle_thermal)
+	tool_name_label = _make_label("", 22, UiStyle.AMBER, true)
+	tool_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	frame.add_child(tool_name_label)
+	tool_name_label.anchor_left = 0.5
+	tool_name_label.anchor_right = 0.5
+	tool_name_label.anchor_top = 1.0
+	tool_name_label.anchor_bottom = 1.0
+	tool_name_label.offset_left = -200.0
+	tool_name_label.offset_right = 200.0
+	tool_name_label.offset_top = -140.0
+	tool_name_label.offset_bottom = -110.0
+
+func _build_water_gauge() -> void:
+	water_gauge = WaterGauge.new()
+	water_gauge.name = "WaterGauge"
+	frame.add_child(water_gauge)
+	water_gauge.anchor_top = 1.0
+	water_gauge.anchor_bottom = 1.0
+	water_gauge.offset_left = MARGIN
+	water_gauge.offset_right = MARGIN + 112.0
+	water_gauge.offset_top = -MARGIN - 112.0
+	water_gauge.offset_bottom = -MARGIN
+
+func _build_toast() -> void:
+	toast_holder = CenterContainer.new()
+	toast_holder.name = "ToastHolder"
+	toast_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(toast_holder)
+	toast_holder.anchor_right = 1.0
+	toast_holder.offset_top = 6.0
+	toast_holder.offset_bottom = 160.0
+	toast_board = JungleBoard.new()
+	toast_board.name = "ToastBoard"
+	toast_board.seed_key = 3
+	toast_board.pad = Vector2(20, 8)
+	toast_board.custom_minimum_size = Vector2(520, 0)
+	toast_board.visible = false
+	toast_holder.add_child(toast_board)
+	toast_label = _make_label("", 20, UiStyle.CREAM)
+	toast_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	toast_label.custom_minimum_size = Vector2(430, 0)
+	toast_board.add_child(toast_label)
+
+func _build_well_prompt() -> void:
+	well_prompt = PanelContainer.new()
+	well_prompt.name = "WellPrompt"
+	well_prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	well_prompt.add_theme_stylebox_override("panel", _pill_style(Color(0.04, 0.12, 0.17, 0.9), UiStyle.WATER))
+	well_prompt.visible = false
+	frame.add_child(well_prompt)
+	well_prompt.anchor_left = 0.5
+	well_prompt.anchor_right = 0.5
+	well_prompt.anchor_top = 1.0
+	well_prompt.anchor_bottom = 1.0
+	well_prompt.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	well_prompt.offset_top = -186.0
+	well_prompt.offset_bottom = -150.0
+	well_prompt.add_child(_make_label("Sumur Air  -  tangki terisi    [E] isi penuh", 20, Color(0.82, 0.96, 1.0), true))
 
 func _process(delta: float) -> void:
 	if not visible:
@@ -93,18 +326,28 @@ func _process(delta: float) -> void:
 	if proximity_timer >= 0.25:
 		proximity_timer = 0.0
 		_calculate_fire_proximity()
+	weather_timer += delta
+	if weather_timer >= 1.0:
+		weather_timer = 0.0
+		_update_weather_display()
 	var pulse: float = 0.86 + sin(Time.get_ticks_msec() * 0.006) * 0.14
 	danger_overlay.color = Color(0.85, 0.08, 0.025, clampf(danger_strength * pulse * 0.10, 0.0, 0.10))
 	if toast_timer > 0.0:
 		toast_timer -= delta
 		if toast_timer <= 0.0:
-			toast_panel.visible = false
+			_hide_toast()
 	if map_is_open and expanded_map_canvas != null:
 		expanded_map_canvas.queue_redraw()
 	minimap_timer += delta
 	if minimap_timer >= 0.12:
 		minimap_timer = 0.0
 		minimap_canvas.queue_redraw()
+
+func setup_hud(simulator: GridSimulator, player: Node3D) -> void:
+	grid_simulator = simulator
+	player_node = player
+	_update_weather_display()
+	minimap_canvas.queue_redraw()
 
 func _on_phase_changed(new_phase: ToolEnums.GamePhase) -> void:
 	if new_phase != ToolEnums.GamePhase.ACTIVE_FPS and map_is_open:
@@ -123,37 +366,46 @@ func _toggle_thermal() -> void:
 	EventBus.thermal_mode_toggled.emit(GameState.is_thermal_active)
 
 func _on_water_changed(current: float, max_val: float) -> void:
-	if water_progress_bar != null:
-		water_progress_bar.max_value = max_val
-		water_progress_bar.value = current
-	if water_label != null:
-		water_label.text = "AIR  %d / %d L" % [int(current), int(max_val)]
+	if water_gauge != null:
+		water_gauge.set_level(current, max_val)
 
 func _on_tool_selected(tool_type: ToolEnums.ToolType) -> void:
-	btn_sekat.button_pressed = (tool_type == ToolEnums.ToolType.SEKAT_BAKAR)
-	btn_semprot.button_pressed = (tool_type == ToolEnums.ToolType.SEMPROT_PERMUKAAN)
-	btn_tombak.button_pressed = (tool_type == ToolEnums.ToolType.TOMBAK_GAMBUT)
+	if tool_slots.size() < 4:
+		return
+	tool_slots[0].set_selected(tool_type == ToolEnums.ToolType.SEKAT_BAKAR)
+	tool_slots[1].set_selected(tool_type == ToolEnums.ToolType.SEMPROT_PERMUKAAN)
+	tool_slots[2].set_selected(tool_type == ToolEnums.ToolType.TOMBAK_GAMBUT)
+	var names: Dictionary = {
+		ToolEnums.ToolType.SEKAT_BAKAR: "Sekat Api",
+		ToolEnums.ToolType.SEMPROT_PERMUKAAN: "Semprot Air",
+		ToolEnums.ToolType.TOMBAK_GAMBUT: "Tombak Gambut"
+	}
+	tool_name_label.text = String(names.get(tool_type, ""))
 
 func _on_thermal_mode_toggled(enabled: bool) -> void:
-	btn_thermal.text = "Thermal: ON [Tab]" if enabled else "Thermal: OFF [Tab]"
 	thermal_visor.visible = enabled
-	btn_thermal.modulate = Color(1.0, 0.45, 0.45) if enabled else Color.WHITE
+	if tool_slots.size() >= 4:
+		tool_slots[3].set_lit(enabled)
 	minimap_canvas.queue_redraw()
-
-func _on_mission_stats_updated(burned: int, safe: int, active: int) -> void:
-	if stats_label != null:
-		var safe_pct: float = (float(safe) / maxf(1.0, float(GameState.total_cells))) * 100.0
-		stats_label.text = "API  %d   |   BARA  %d   |   AMAN  %.0f%%   |   HANGUS  %d" % [
-			active, GameState.subsurface_only_cells, safe_pct, burned
-		]
 
 func _on_educational_toast(message: String, is_warning: bool) -> void:
 	toast_label.text = message
-	toast_panel.modulate = Color(1.0, 0.72, 0.42, 0.0) if is_warning else Color(0.55, 1.0, 0.70, 0.0)
-	toast_panel.visible = true
+	toast_label.add_theme_color_override("font_color", Color(1.0, 0.86, 0.6) if is_warning else UiStyle.CREAM)
+	toast_board.modulate.a = 0.0
+	toast_board.visible = true
 	toast_timer = 5.5
-	var tw: Tween = create_tween()
-	tw.tween_property(toast_panel, "modulate:a", 1.0, 0.18)
+	if toast_tween != null:
+		toast_tween.kill()
+	toast_tween = create_tween()
+	toast_tween.tween_interval(0.12)
+	toast_tween.tween_property(toast_board, "modulate:a", 1.0, 0.25)
+
+func _hide_toast() -> void:
+	if toast_tween != null:
+		toast_tween.kill()
+	toast_tween = create_tween()
+	toast_tween.tween_property(toast_board, "modulate:a", 0.0, 0.3)
+	toast_tween.tween_callback(func() -> void: toast_board.visible = false)
 
 func _on_injection_progress_changed(progress: float, is_active: bool) -> void:
 	injection_panel.visible = is_active
@@ -161,54 +413,55 @@ func _on_injection_progress_changed(progress: float, is_active: bool) -> void:
 		injection_bar.value = progress * 100.0
 
 func _on_well_proximity_changed(is_near_well: bool) -> void:
-	well_prompt_panel.visible = is_near_well
+	well_prompt.visible = is_near_well
 
 func _on_cell_hovered(pos: Vector2i, cell: PeatCellData) -> void:
 	if cell == null or pos == Vector2i(-1, -1):
-		hover_panel.visible = false
-		if crosshair_reticle != null:
-			crosshair_reticle.modulate = Color(1.0, 1.0, 1.0, 0.88)
+		hover_tag.visible = false
+		crosshair_reticle.modulate = Color(1.0, 1.0, 1.0, 0.88)
 		return
-
-	if crosshair_reticle != null:
-		if cell.is_active_hazard():
-			crosshair_reticle.modulate = Color(1.0, 0.48, 0.14, 1.0)
-		elif cell.has_well:
-			crosshair_reticle.modulate = Color(0.25, 0.88, 1.0, 1.0)
-		else:
-			crosshair_reticle.modulate = Color(1.0, 1.0, 1.0, 0.92)
-
-	hover_panel.visible = true
-	cell_coords_label.text = "Petak (%d, %d)" % [pos.x, pos.y]
-
-	var moisture_pct: int = int(cell.soil_moisture * 100.0)
-	var status_hazard: String = "Aman"
+	var title: String = ""
+	var title_color: Color = UiStyle.CREAM
+	crosshair_reticle.modulate = Color(1.0, 1.0, 1.0, 0.92)
 	if cell.has_well:
-		status_hazard = "Sumur Air (Isi Ulang)"
+		title = "Sumur Air"
+		title_color = UiStyle.WATER
+		crosshair_reticle.modulate = Color(0.25, 0.88, 1.0, 1.0)
 	elif cell.is_burning() and cell.has_ember():
-		status_hazard = "Api Permukaan + Bara Dalam!"
+		title = "Api + Bara Dalam"
+		title_color = UiStyle.FIRE
 	elif cell.is_burning():
-		status_hazard = "Api Permukaan!"
+		title = "Api Permukaan"
+		title_color = UiStyle.FIRE
 	elif cell.has_ember():
-		status_hazard = "Bara Bawah Tanah!"
+		title = "Bara Bawah Tanah"
+		title_color = Color(1.0, 0.35, 0.45)
 	elif cell.is_firebreak:
-		status_hazard = "Parit Sekat Api"
+		title = "Sekat Api"
+		title_color = UiStyle.AMBER
 	elif cell.is_burnt:
-		status_hazard = "Bekas Terbakar"
-
-	cell_stats_label.text = "Muka Air: %.1f cm | Lembap: %d%%\nKedalaman Gambut: %.1f m | %s" % [
-		cell.water_table, moisture_pct, cell.peat_depth, status_hazard
-	]
-
-	var risk_str: String = PFVICalculator.get_risk_label(cell.risk_category)
-	cell_risk_label.text = "PFVI: %.0f (%s)" % [cell.pfvi_score, risk_str]
-	cell_risk_label.modulate = PFVICalculator.get_risk_color(cell.risk_category)
+		title = "Bekas Terbakar"
+		title_color = Color(0.7, 0.68, 0.62)
+	elif cell.risk_category >= ToolEnums.RiskCategory.TINGGI:
+		title = "Rawan Terbakar"
+		title_color = PFVICalculator.get_risk_color(cell.risk_category)
+	if cell.is_active_hazard():
+		crosshair_reticle.modulate = Color(1.0, 0.48, 0.14, 1.0)
+	if title.is_empty():
+		hover_tag.visible = false
+		return
+	hover_tag.visible = true
+	hover_title.text = title
+	hover_title.add_theme_color_override("font_color", title_color)
+	hover_detail.text = "Lembap %d%%   Muka air %.0f cm" % [int(cell.soil_moisture * 100.0), cell.water_table]
 
 func _update_weather_display() -> void:
-	if weather_label != null:
-		weather_label.text = "CUACA  %.1f°C   |   ANGIN  %.0f km/h   |   HUJAN %.1f mm" % [
-			GameState.ambient_temperature, GameState.wind_speed_kmh, GameState.global_rainfall_rate
-		]
+	if wind_label == null:
+		return
+	var parts: String = "Angin %.0f km/j   %.0f°C" % [GameState.wind_speed_kmh, GameState.ambient_temperature]
+	if GameState.global_rainfall_rate >= 1.0:
+		parts += "   Hujan"
+	wind_label.text = parts
 
 func _input(event: InputEvent) -> void:
 	if GameState.current_phase != ToolEnums.GamePhase.ACTIVE_FPS:
@@ -242,98 +495,43 @@ func _create_expanded_map() -> void:
 	add_child(expanded_map)
 	expanded_map.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var dim: ColorRect = ColorRect.new()
-	dim.color = Color(0.012, 0.03, 0.037, 0.91)
+	dim.color = Color(0.015, 0.03, 0.02, 0.86)
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	expanded_map.add_child(dim)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var center: CenterContainer = CenterContainer.new()
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	expanded_map.add_child(center)
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var body: VBoxContainer = VBoxContainer.new()
-	body.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	body.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	body.grow_vertical = Control.GROW_DIRECTION_BOTH
-	body.custom_minimum_size = Vector2(570.0, 605.0)
-	expanded_map.add_child(body)
-	body.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	body.add_theme_constant_override("separation", 8)
-	var title: Label = Label.new()
-	title.text = "PETA OPERASI  /  SATRIA GAMBUT"
-	title.add_theme_font_size_override("font_size", 23)
-	title.add_theme_color_override("font_color", Color(0.32, 0.93, 0.80))
+	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.add_theme_constant_override("separation", 10)
+	center.add_child(body)
+	var title_board: JungleBoard = JungleBoard.new()
+	title_board.seed_key = 11
+	title_board.custom_minimum_size = Vector2(420, 0)
+	title_board.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	body.add_child(title_board)
+	var title: Label = _make_label("PETA OPERASI", 32, UiStyle.CREAM, true)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	body.add_child(title)
-	var info: Label = Label.new()
-	info.text = "M / ESC: Tutup  |  Kuning: Api  |  Biru: Sumur  |  Hijau: Pos"
-	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	info.add_theme_font_size_override("font_size", 13)
-	body.add_child(info)
+	title_board.add_child(title)
 	expanded_map_canvas = Control.new()
 	expanded_map_canvas.name = "FullMapCanvas"
-	expanded_map_canvas.custom_minimum_size = Vector2(520.0, 520.0)
+	expanded_map_canvas.custom_minimum_size = Vector2(470.0, 470.0)
 	expanded_map_canvas.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	expanded_map_canvas.draw.connect(_draw_expanded_map)
 	body.add_child(expanded_map_canvas)
-	var footer: Label = Label.new()
-	footer.text = "LIVE GPS SIMULASI • N = UTARA • BARA TERSEMBUNYI HANYA TAMPIL SAAT THERMAL"
+	var footer: Label = _make_label("M / Esc  tutup      Kuning  api      Biru  sumur      Hijau  pos", 18, Color(0.9, 0.94, 0.82))
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	footer.add_theme_font_size_override("font_size", 12)
 	body.add_child(footer)
 	expanded_map.visible = false
 
-# Visual-only radar navigation. H itself is handled by MissionDirector, never twice.
 func _on_navigator_target_changed(cell: Vector2i, category: String) -> void:
 	nav_cell = cell
 	nav_category = category
 	minimap_canvas.queue_redraw()
 	if expanded_map_canvas != null:
 		expanded_map_canvas.queue_redraw()
-
-func _panel_style(accent: Color) -> StyleBoxFlat:
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = Color(0.023, 0.065, 0.082, 0.87)
-	style.border_color = accent.darkened(0.25)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(13)
-	style.content_margin_left = 11
-	style.content_margin_right = 11
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
-	style.shadow_color = Color(0, 0, 0, 0.30)
-	style.shadow_size = 7
-	return style
-
-func _style_modern_hud() -> void:
-	var water_panel: PanelContainer = $RootMargin/MainContainer/TopRow/TopLeftBox/TopBar/WaterPanel
-	var weather_panel: PanelContainer = $RootMargin/MainContainer/TopRow/TopLeftBox/TopBar/WeatherPanel
-	var fire_panel: PanelContainer = $RootMargin/MainContainer/TopRow/TopLeftBox/TopBar/StatsPanel
-	var map_panel: PanelContainer = $RootMargin/MainContainer/TopRow/MiniMapPanel
-	var cell_panel: PanelContainer = $RootMargin/MainContainer/BottomRow/CellInfoPanel
-	var hint_panel: PanelContainer = $RootMargin/MainContainer/HintPanel
-	for item in [
-		{"panel": water_panel, "accent": Color(0.18, 0.83, 0.99)},
-		{"panel": weather_panel, "accent": Color(0.95, 0.69, 0.28)},
-		{"panel": fire_panel, "accent": Color(0.98, 0.39, 0.24)},
-		{"panel": map_panel, "accent": Color(0.13, 0.97, 0.68)},
-		{"panel": cell_panel, "accent": Color(0.32, 0.71, 0.93)},
-		{"panel": hint_panel, "accent": Color(0.30, 0.77, 0.65)}
-	]:
-		var panel: PanelContainer = item["panel"]
-		panel.add_theme_stylebox_override("panel", _panel_style(item["accent"]))
-	for label in [water_label, weather_label, stats_label]:
-		label.add_theme_font_size_override("font_size", 13)
-		label.add_theme_color_override("font_color", Color(0.92, 0.97, 0.96))
-	var water_style: StyleBoxFlat = StyleBoxFlat.new()
-	water_style.bg_color = Color(0.12, 0.74, 0.94)
-	water_style.set_corner_radius_all(5)
-	var water_bg: StyleBoxFlat = StyleBoxFlat.new()
-	water_bg.bg_color = Color(0.07, 0.21, 0.27, 0.85)
-	water_bg.set_corner_radius_all(5)
-	water_progress_bar.add_theme_stylebox_override("fill", water_style)
-	water_progress_bar.add_theme_stylebox_override("background", water_bg)
-	var radar_title: Label = $RootMargin/MainContainer/TopRow/MiniMapPanel/VBox/Title
-	radar_title.text = "TACTICAL RADAR  •  [M] MAP  •  [H] GUIDE"
-	radar_title.add_theme_color_override("font_color", Color(0.42, 1.0, 0.80))
-	radar_title.add_theme_font_size_override("font_size", 11)
-	var help_label: Label = $RootMargin/MainContainer/HintPanel/HintLabel
-	help_label.text = "WASD Move  |  V FPS/TPP  |  H Guide  |  M Map  |  ESC Pause  |  F10 Photo Mode"
 
 func _draw_expanded_map() -> void:
 	if expanded_map_canvas != null:
@@ -367,7 +565,6 @@ func _draw_radar(canvas: Control, expanded: bool) -> void:
 		elif GameState.is_thermal_active:
 			color = PFVICalculator.get_risk_color(cell.risk_category) * 0.63
 		canvas.draw_rect(rect, color, true)
-	# Subtle roads-like navigation grid; unlike real roads this represents 3m survey cells.
 	var line_color: Color = Color(0.50, 0.71, 0.65, 0.16)
 	for x in range(0, width + 1, 4):
 		var xx: float = float(x) * cell_w
@@ -406,8 +603,6 @@ func _draw_radar(canvas: Control, expanded: bool) -> void:
 		])
 		canvas.draw_colored_polygon(arrow, Color(0.96, 0.98, 0.97))
 		canvas.draw_arc(player_pos, scale * 1.40, 0.0, TAU, 24, Color(0.51, 1.0, 0.94, 0.50), 1.0)
-	# Animated scanning sweep / compass rings for a modern tactical-radar look.
-	# All markers remain grounded in the real 16x16 game grid.
 	if player_node != null:
 		var radar_center: Vector2 = Vector2(
 			clampf((player_node.global_position.x / GameState.CELL_SIZE + 0.5) * cell_w, 3.0, sz.x - 3.0),
@@ -422,18 +617,6 @@ func _draw_radar(canvas: Control, expanded: bool) -> void:
 	if not GameState.station_safe:
 		var alarm_phase: float = 0.5 + 0.5 * sin(float(Time.get_ticks_msec()) * 0.010)
 		canvas.draw_arc(station, (18.0 if expanded else 10.0) + alarm_phase * 4.0, 0.0, TAU, 36, Color(1.0, 0.24, 0.18, 0.25 + alarm_phase * 0.60), 2.0)
-	# Corner brackets mimic ruggedized rescue-team GPS/radar displays.
-	var corner: float = 18.0 if expanded else 9.0
-	var bracket_color: Color = Color(0.52, 0.98, 0.84, 0.85)
-	for flip_x in [0.0, 1.0]:
-		for flip_y in [0.0, 1.0]:
-			var base: Vector2 = Vector2(flip_x * sz.x, flip_y * sz.y)
-			var sx: float = 1.0 if flip_x == 0.0 else -1.0
-			var sy: float = 1.0 if flip_y == 0.0 else -1.0
-			canvas.draw_line(base, base + Vector2(sx * corner, 0), bracket_color, 2.8)
-			canvas.draw_line(base, base + Vector2(0, sy * corner), bracket_color, 2.8)
-	# Animated navigation target with route line. Always visible on radar even
-	# when the world arrow is disabled in preferences.
 	if nav_cell != Vector2i(-1, -1) and player_node != null:
 		var target_point: Vector2 = Vector2((float(nav_cell.x) + 0.5) * cell_w, (float(nav_cell.y) + 0.5) * cell_h)
 		var from_point: Vector2 = Vector2(
@@ -461,14 +644,12 @@ func _draw_radar(canvas: Control, expanded: bool) -> void:
 			canvas.draw_colored_polygon(chevron, nav_color)
 		canvas.draw_arc(target_point, small + 3.0 + wave * 5.0, 0.0, TAU, 32, Color(nav_color.r, nav_color.g, nav_color.b, 0.55 + wave * 0.42), 2.1)
 		canvas.draw_circle(target_point, 3.8 if not expanded else 6.0, nav_color)
-	canvas.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.20, 0.86, 0.73, 0.85), false, 2.0)
 	if expanded:
+		canvas.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.40, 0.66, 0.20, 0.9), false, 3.0)
 		var font: Font = ThemeDB.fallback_font
 		canvas.draw_string(font, Vector2(14, 22), "N", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(0.91, 0.97, 0.90))
 		canvas.draw_string(font, Vector2(14, sz.y - 12), "S", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color(0.91, 0.97, 0.90))
 
-# Read-only visual feedback: no health, damage or game-rule changes.
-# Only visible surface fire triggers this warning; underground embers remain hidden.
 func _calculate_fire_proximity() -> void:
 	if player_node == null or grid_simulator == null:
 		danger_strength = 0.0

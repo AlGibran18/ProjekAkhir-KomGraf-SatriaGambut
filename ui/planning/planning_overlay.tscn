@@ -60,7 +60,6 @@ offset_right = 460.0
 offset_bottom = 275.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
 [node name="HBox" type="HBoxContainer" parent="CenterPanel"]
 layout_mode = 2
@@ -89,7 +88,6 @@ text = "Hijau: Aman | Kuning: Sedang | Oranye: Tinggi | Merah: Ekstrem | Biru: S
 [node name="InfoPanel" type="PanelContainer" parent="CenterPanel/HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/panel = SubResource("StyleBoxFlat_sub")
 
 [node name="VBox" type="VBoxContainer" parent="CenterPanel/HBox/InfoPanel"]
 layout_mode = 2

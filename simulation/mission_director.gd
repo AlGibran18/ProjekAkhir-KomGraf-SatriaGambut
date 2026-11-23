@@ -14,9 +14,7 @@ var tutorial_step: int = 0
 var tutorial_done: Array[bool] = [false, false, false, false]
 var mission_layer: CanvasLayer
 var objective_label: Label
-var weather_label: Label
 var tutorial_label: Label
-var reserve_label: Label
 var progress_bar: ProgressBar
 var weather_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var event_number: int = 0
@@ -58,62 +56,44 @@ func _create_mission_hud() -> void:
 	mission_layer = CanvasLayer.new()
 	mission_layer.layer = 6
 	add_child(mission_layer)
-	var panel: PanelContainer = PanelContainer.new()
-	panel.name = "MissionPanel"
-	panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	panel.position = Vector2(18, 144)
-	panel.custom_minimum_size = Vector2(330, 0)
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = Color(0.026, 0.069, 0.087, 0.90)
-	style.border_color = Color(0.22, 0.92, 0.72, 0.75)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(15)
-	style.shadow_color = Color(0.0, 0.0, 0.0, 0.35)
-	style.shadow_size = 10
-	style.content_margin_left = 14.0
-	style.content_margin_right = 12.0
-	style.content_margin_top = 10.0
-	style.content_margin_bottom = 10.0
-	panel.add_theme_stylebox_override("panel", style)
-	mission_layer.add_child(panel)
+	var board: JungleBoard = JungleBoard.new()
+	board.name = "MissionBoard"
+	board.seed_key = 5
+	board.pad = Vector2(16, 6)
+	board.custom_minimum_size = Vector2(330, 0)
+	board.position = Vector2(8, 4)
+	mission_layer.add_child(board)
 	var stack: VBoxContainer = VBoxContainer.new()
-	stack.add_theme_constant_override("separation", 5)
-	panel.add_child(stack)
+	stack.add_theme_constant_override("separation", 2)
+	board.add_child(stack)
+	var header: HBoxContainer = HBoxContainer.new()
+	stack.add_child(header)
 	var title: Label = Label.new()
-	title.text = "SATGAS  /  OPERASI SATRIA GAMBUT"
-	title.add_theme_color_override("font_color", Color(0.42, 0.95, 0.75))
-	title.add_theme_font_size_override("font_size", 17)
-	stack.add_child(title)
+	title.text = "PADAMKAN HOTSPOT"
+	title.add_theme_font_override("font", UiStyle.title_font())
+	title.add_theme_font_size_override("font_size", 21)
+	title.add_theme_color_override("font_color", UiStyle.CREAM)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title)
 	objective_label = Label.new()
-	objective_label.text = "OBJEKTIF: Padamkan hotspot dan lindungi pos"
-	objective_label.add_theme_font_size_override("font_size", 13)
-	stack.add_child(objective_label)
-	navigation_label = Label.new()
-	navigation_label.add_theme_font_size_override("font_size", 13)
-	navigation_label.add_theme_color_override("font_color", Color(0.95, 0.81, 0.40))
-	stack.add_child(navigation_label)
+	objective_label.add_theme_font_override("font", UiStyle.title_font())
+	objective_label.add_theme_font_size_override("font_size", 21)
+	objective_label.add_theme_color_override("font_color", UiStyle.AMBER)
+	header.add_child(objective_label)
 	progress_bar = ProgressBar.new()
-	progress_bar.custom_minimum_size.y = 10.0
+	progress_bar.custom_minimum_size.y = 9.0
 	progress_bar.show_percentage = false
 	progress_bar.max_value = 100.0
-	var progress_fill: StyleBoxFlat = StyleBoxFlat.new()
-	progress_fill.bg_color = Color(0.28, 0.91, 0.69)
-	progress_fill.set_corner_radius_all(6)
-	progress_bar.add_theme_stylebox_override("fill", progress_fill)
-	var progress_bg: StyleBoxFlat = StyleBoxFlat.new()
-	progress_bg.bg_color = Color(0.07, 0.23, 0.24)
-	progress_bg.set_corner_radius_all(6)
-	progress_bar.add_theme_stylebox_override("background", progress_bg)
+	progress_bar.add_theme_stylebox_override("fill", UiStyle.rounded_box(UiStyle.SAFE, 6))
 	stack.add_child(progress_bar)
-	weather_label = Label.new()
-	weather_label.add_theme_font_size_override("font_size", 12)
-	stack.add_child(weather_label)
-	reserve_label = Label.new()
-	reserve_label.add_theme_font_size_override("font_size", 12)
-	stack.add_child(reserve_label)
+	navigation_label = Label.new()
+	navigation_label.add_theme_font_size_override("font_size", 17)
+	navigation_label.add_theme_color_override("font_color", Color(1.0, 0.88, 0.55))
+	navigation_label.clip_text = true
+	stack.add_child(navigation_label)
 	tutorial_label = Label.new()
-	tutorial_label.add_theme_font_size_override("font_size", 12)
+	tutorial_label.add_theme_font_size_override("font_size", 17)
+	tutorial_label.add_theme_color_override("font_color", Color(0.78, 0.95, 0.7))
 	tutorial_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	stack.add_child(tutorial_label)
 
@@ -124,8 +104,6 @@ func _on_phase_changed(phase: ToolEnums.GamePhase) -> void:
 		_publish_nav(Vector2i(-1, -1), "")
 	if phase == ToolEnums.GamePhase.ACTIVE_FPS:
 		_refresh_ui()
-		if GameState.current_level_index == 0 and tutorial_step == 0:
-			EventBus.educational_toast.emit("TUTORIAL: Gunakan [2] untuk semprot permukaan, lalu [Tab] mencari bara tersembunyi.", false)
 
 func _on_tool_action(tool: ToolEnums.ToolType, _pos: Vector2i) -> void:
 	if GameState.current_level_index != 0:
@@ -166,24 +144,22 @@ func _refresh_ui() -> void:
 	var cleared: int = maxi(0, base_hotspots - active)
 	var prog: float = clampf(100.0 * float(cleared) / float(base_hotspots), 0.0, 100.0)
 	progress_bar.value = prog
-	objective_label.text = "STATUS  /  %d HOTSPOT   •   POS %s" % [active, "AMAN" if GameState.station_safe else "HANCUR"]
+	var station_text: String = "" if GameState.station_safe else "  POS TERBAKAR!"
+	objective_label.text = "%d / %d%s" % [cleared, base_hotspots, station_text]
+	objective_label.add_theme_color_override("font_color", UiStyle.AMBER if GameState.station_safe else UiStyle.DANGER)
 	_update_navigator()
-	weather_label.text = "CUACA  /  %.1f°C   •   ANGIN %.0f km/j   •   HUJAN %.1f mm" % [GameState.ambient_temperature, GameState.wind_speed_kmh, GameState.global_rainfall_rate]
-	var reserve_total: float = 0.0
-	for amount in GameState.well_reserves.values():
-		reserve_total += float(amount)
-	reserve_label.text = "LOGISTIK  /  SUMUR %.0f L   •   TERPAKAI %.0f L" % [reserve_total, GameState.water_used_total]
 	if GameState.current_level_index == 0:
 		var tips: Array[String] = [
-			"LATIHAN 1/4: [2] semprot api menggunakan klik kiri.",
-			"LATIHAN 2/4: [Tab] aktifkan thermal untuk melihat bara.",
-			"LATIHAN 3/4: [1] buat sekat api di petak aman.",
-			"LATIHAN 4/4: [3] injeksikan air ke bara dalam.",
-			"LATIHAN 4/4: Semua alat sudah dicoba!"
+			"Latihan 1/4  -  tekan [2], klik kiri untuk menyemprot api.",
+			"Latihan 2/4  -  tekan [Tab] untuk melihat bara tersembunyi.",
+			"Latihan 3/4  -  tekan [1] buat sekat api di petak aman.",
+			"Latihan 4/4  -  tekan [3] injeksikan air ke bara dalam.",
+			"Semua alat sudah dicoba. Padamkan semua bara!"
 		]
 		tutorial_label.text = tips[mini(tutorial_step, tips.size() - 1)]
 	else:
-		tutorial_label.text = "MISI: Lindungi pos utara. Gunakan thermal dan minimap."
+		tutorial_label.text = ""
+	tutorial_label.visible = not tutorial_label.text.is_empty()
 
 func _change_weather() -> void:
 	# Deterministic bounds but varying fronts. Rain and wind affect cell risk and spreading.
@@ -224,8 +200,9 @@ func _publish_nav(cell: Vector2i, category: String) -> void:
 func _update_navigator() -> void:
 	if navigation_label == null or tracked_player == null or simulator == null:
 		return
+	navigation_label.visible = navigation_mode >= 0
 	if navigation_mode < 0:
-		navigation_label.text = "[H] PANDUAN: Tekan H untuk pilih HOTSPOT / SUMUR / POS"
+		navigation_label.text = ""
 		_publish_nav(Vector2i(-1, -1), "")
 		return
 	var target_pos: Vector2i = Vector2i(-1, -1)
@@ -258,7 +235,7 @@ func _update_navigator() -> void:
 				target_pos = grid_pos
 	if target_pos == Vector2i(-1, -1):
 		var hint: String = " (aktifkan Thermal [Tab])" if navigation_mode == 0 and GameState.active_fire_cells > 0 else ""
-		navigation_label.text = "[H] %s: Tidak ditemukan%s" % [title, hint]
+		navigation_label.text = "%s: tidak ditemukan%s" % [title.capitalize(), hint]
 		_publish_nav(Vector2i(-1, -1), title)
 		return
 	_publish_nav(target_pos, title)
@@ -266,7 +243,7 @@ func _update_navigator() -> void:
 	var direction: Vector2 = target_world - player_pos
 	var distance: float = direction.length()
 	if distance < 1.5:
-		navigation_label.text = "[H] %s: DI LOKASI (%.0f m)" % [title, distance]
+		navigation_label.text = "%s: di lokasi" % title.capitalize()
 		return
 	direction = direction.normalized()
 	var facing: Vector3 = -tracked_player.global_transform.basis.z
@@ -275,4 +252,4 @@ func _update_navigator() -> void:
 	var angle: float = atan2(direction.dot(right), direction.dot(forward))
 	var sector: int = posmod(roundi(angle / (PI / 4.0)), 8)
 	var pointers: Array[String] = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"]
-	navigation_label.text = "[H] %s %s  %.0f m" % [title, pointers[sector], distance]
+	navigation_label.text = "%s  %s  %.0f m" % [title.capitalize(), pointers[sector], distance]

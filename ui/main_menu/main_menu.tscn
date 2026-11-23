@@ -84,7 +84,6 @@ theme_override_constants/separation = 32
 custom_minimum_size = Vector2(540, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
 [node name="VBox" type="VBoxContainer" parent="MainMargin/MainHBox/LeftPanel"]
 layout_mode = 2
@@ -104,7 +103,6 @@ text = "Simulasi 3D Prediksi Risiko & Pemadaman Kebakaran Lahan Gambut Tropis"
 
 [node name="LevelBox" type="PanelContainer" parent="MainMargin/MainHBox/LeftPanel/VBox"]
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_card")
 
 [node name="ContentVBox" type="VBoxContainer" parent="MainMargin/MainHBox/LeftPanel/VBox/LevelBox"]
 layout_mode = 2
@@ -154,7 +152,6 @@ text = "KELUAR"
 [node name="RightPanel" type="PanelContainer" parent="MainMargin/MainHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
 [node name="VBox" type="VBoxContainer" parent="MainMargin/MainHBox/RightPanel"]
 layout_mode = 2
@@ -201,7 +198,6 @@ offset_right = 380.0
 offset_bottom = 250.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_modal")
 
 [node name="VBox" type="VBoxContainer" parent="GuideModal"]
 layout_mode = 2
@@ -238,7 +234,6 @@ offset_right = 280.0
 offset_bottom = 220.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_modal")
 
 [node name="VBox" type="VBoxContainer" parent="SettingsModal"]
 layout_mode = 2
@@ -295,7 +290,6 @@ offset_right = 360.0
 offset_bottom = 230.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_modal")
 
 [node name="VBox" type="VBoxContainer" parent="CreditsModal"]
 layout_mode = 2
@@ -310,7 +304,9 @@ text = "CREDITS — SATRIA GAMBUT"
 [node name="Body" type="Label" parent="CreditsModal/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
-text = "TIM PENGEMBANG (GRAFIKA KOMPUTER):\n• Ketua Tim: [Nama Ketua Tim] — NIM: [NIM Ketua]\n• Anggota 1: [Nama Anggota 1] — NIM: [NIM Anggota 1]\n• Anggota 2: [Nama Anggota 2] — NIM: [NIM Anggota 2]\n• Anggota 3: [Nama Anggota 3] — NIM: [NIM Anggota 3]\n\nREFERENSI ILMIAH:\n• Riset Pemodelan Risiko Kebakaran Gambut PeatFR / PFVI\n  (University of Nottingham, ITB, & IPB — Prof. Bagus Muljadi & Dr. Adilan Mahdiasa)\n\nATRIBUSI ASET & TEKNOLOGI:\n• Engine: Godot Engine 4 (Standalone Offline Desktop)\n• Aset 3D Alam: Stylized Nature MegaKit oleh Quaternius & Nature Kit oleh Kenney.nl (CC0 1.0)\n• Efek Suara: Disintesis Lokal Offline (.wav)"
+text = "TIM PENGEMBANG (GRAFIKA KOMPUTER):\n• Ketua Tim: [Nama Ketua Tim] — NIM: [NIM Ketua]\n• Anggota 1: [Nama Anggota 1] — NIM: [NIM Anggota 1]\n• Anggota 2: [Nama Anggota 2] — NIM: [NIM Anggota 2]\n• Anggota 3: [Nama Anggota 3] — NIM: [NIM Anggota 3]\n\nREFERENSI ILMIAH:\n• Riset Pemodelan Risiko Kebakaran Gambut PeatFR / PFVI\n  (University of Nottingham, ITB, & IPB — Prof. Bagus Muljadi & Dr. Adilan Mahdiasa)\n\nATRIBUSI ASET & TEKNOLOGI:\n• Engine: Godot Engine 4 (Standalone Offline Desktop)\n• Aset 3D Alam: Stylized Nature MegaKit oleh Quaternius & Nature Kit oleh Kenney.nl (CC0 1.0)\n• Efek Suara: Disintesis Lokal Offline (.wav)
+• Font: Lilita One & Barlow Condensed (SIL OFL 1.1, Google Fonts)
+• Papan kayu jungle sawit: model 3D prosedural buatan tim"
 autowrap_mode = 3
 
 [node name="BtnCloseCredits" type="Button" parent="CreditsModal/VBox"]
