@@ -1,5 +1,4 @@
-# V8.2 — Lightweight procedural firefighter shown only in third-person.
-# Uses meshes, not imported skeletons, to keep the existing game entirely offline.
+# simulation/player/firefighter_avatar_3d.gd - Animates the field responder and equipped tools.
 class_name FirefighterAvatar3D
 extends Node3D
 
@@ -20,35 +19,29 @@ var aim_target_world: Vector3 = Vector3.ZERO
 var has_aim_target: bool = false
 var action_pulse: float = 0.0
 
+var uniform_material: StandardMaterial3D
+var helmet_material: StandardMaterial3D
+
 func _ready() -> void:
-	var red: Material = _mat(Color(0.80, 0.11, 0.10))
-	var yellow: Material = _mat(Color(1.0, 0.72, 0.10))
-	var dark: Material = _mat(Color(0.08, 0.11, 0.12))
-	var skin: Material = _mat(Color(0.75, 0.47, 0.27))
-	_part("Body", Vector3(0, 1.12, 0), Vector3(0.48, 0.67, 0.28), red)
-	_part("ReflectiveStripe", Vector3(0, 1.13, -0.15), Vector3(0.52, 0.11, 0.05), yellow)
-	_part("Neck", Vector3(0, 1.55, 0), Vector3(0.13, 0.12, 0.13), skin)
-	_part("Head", Vector3(0, 1.77, 0), Vector3(0.28, 0.33, 0.27), skin)
-	_part("Helmet", Vector3(0, 1.98, 0), Vector3(0.38, 0.16, 0.36), red)
-	_part("HelmetBrim", Vector3(0, 1.89, -0.04), Vector3(0.48, 0.06, 0.49), yellow)
-	_part("Backpack", Vector3(0, 1.14, 0.25), Vector3(0.40, 0.52, 0.18), dark)
-	left_leg = Node3D.new()
-	right_leg = Node3D.new()
-	left_arm = Node3D.new()
-	right_arm = Node3D.new()
-	for limb in [left_leg, right_leg, left_arm, right_arm]:
-		add_child(limb)
-	left_leg.position = Vector3(-0.13, 0.78, 0.0)
-	right_leg.position = Vector3(0.13, 0.78, 0.0)
-	left_arm.position = Vector3(-0.32, 1.45, 0.0)
-	right_arm.position = Vector3(0.32, 1.45, 0.0)
-	_limb(left_leg, Vector3(0, -0.35, 0), Vector3(0.18, 0.7, 0.20), dark)
-	_limb(right_leg, Vector3(0, -0.35, 0), Vector3(0.18, 0.7, 0.20), dark)
-	_limb(left_arm, Vector3(0, -0.29, 0), Vector3(0.18, 0.56, 0.20), red)
-	_limb(right_arm, Vector3(0, -0.29, 0), Vector3(0.18, 0.56, 0.20), red)
-	_part("BootLeft", Vector3(-0.13, 0.11, -0.05), Vector3(0.21, 0.20, 0.30), dark)
-	_part("BootRight", Vector3(0.13, 0.11, -0.05), Vector3(0.21, 0.20, 0.30), dark)
-	_upgrade_gear()
+	var responder: Node3D = preload("res://assets/models/peat_responder.glb").instantiate() as Node3D
+	add_child(responder)
+	left_leg = responder.get_node("LeftLeg")
+	right_leg = responder.get_node("RightLeg")
+	left_arm = responder.get_node("LeftArm")
+	right_arm = responder.get_node("RightArm")
+	for mesh_node: Node in responder.find_children("*", "MeshInstance3D", true, false):
+		var model: MeshInstance3D = mesh_node as MeshInstance3D
+		for surface: int in range(model.mesh.get_surface_count()):
+			var material: StandardMaterial3D = model.mesh.surface_get_material(surface) as StandardMaterial3D
+			match material.resource_name:
+				"Suit":
+					if uniform_material == null:
+						uniform_material = material.duplicate()
+					model.set_surface_override_material(surface, uniform_material)
+				"Helmet":
+					helmet_material = material.duplicate()
+					model.set_surface_override_material(surface, helmet_material)
+	_build_equipped_tools()
 	apply_outfit()
 	GameState.outfit_changed.connect(apply_outfit)
 	EventBus.tool_action_performed.connect(_on_tool_action)
@@ -113,61 +106,9 @@ func _mat(tint: Color) -> Material:
 	m.roughness = 0.78
 	return m
 
-func _part(name_str: String, where: Vector3, dims: Vector3, mat: Material) -> void:
-	var mesh: MeshInstance3D = MeshInstance3D.new()
-	mesh.name = name_str
-	var geometry: Mesh
-	if name_str == "Head":
-		var sphere: SphereMesh = SphereMesh.new()
-		sphere.radius = dims.x * 0.55
-		sphere.height = dims.y
-		geometry = sphere
-	elif name_str == "Helmet":
-		var dome: SphereMesh = SphereMesh.new()
-		dome.radius = dims.x * 0.56
-		dome.height = dims.y
-		geometry = dome
-	else:
-		var box: BoxMesh = BoxMesh.new()
-		box.size = dims
-		geometry = box
-	mesh.mesh = geometry
-	mesh.material_override = mat
-	mesh.position = where
-	add_child(mesh)
-
-func _limb(parent: Node3D, where: Vector3, dims: Vector3, mat: Material) -> void:
-	var part: MeshInstance3D = MeshInstance3D.new()
-	var capsule: CapsuleMesh = CapsuleMesh.new()
-	capsule.radius = dims.x * 0.52
-	capsule.height = dims.y
-	part.mesh = capsule
-	part.material_override = mat
-	part.position = where
-	parent.add_child(part)
-
-# Decorative firefighter equipment: visor, armor, gloves, utility belt and tank.
-func _upgrade_gear() -> void:
-	var dark: Material = _mat(Color(0.07, 0.105, 0.12))
+func _build_equipped_tools() -> void:
 	var metal: Material = _mat(Color(0.44, 0.54, 0.58))
 	var gold: Material = _mat(Color(1.0, 0.78, 0.16))
-	var glass: Material = _mat(Color(0.21, 0.69, 0.79))
-	_part("ArmorFront", Vector3(0, 1.20, -0.157), Vector3(0.46, 0.46, 0.075), dark)
-	_part("ArmorMark", Vector3(0, 1.23, -0.205), Vector3(0.28, 0.07, 0.02), gold)
-	_part("ShoulderL", Vector3(-0.32, 1.43, 0), Vector3(0.23, 0.19, 0.31), dark)
-	_part("ShoulderR", Vector3(0.32, 1.43, 0), Vector3(0.23, 0.19, 0.31), dark)
-	_part("Belt", Vector3(0, 0.79, 0.0), Vector3(0.52, 0.13, 0.33), dark)
-	_part("BeltBuckle", Vector3(0, 0.79, -0.17), Vector3(0.10, 0.08, 0.03), metal)
-	_part("Mask", Vector3(0, 1.73, -0.145), Vector3(0.26, 0.14, 0.05), dark)
-	_part("Visor", Vector3(0, 1.84, -0.17), Vector3(0.29, 0.13, 0.035), glass)
-	_part("Tank", Vector3(0, 1.16, 0.40), Vector3(0.31, 0.58, 0.22), metal)
-	_part("TankCap", Vector3(0, 1.46, 0.41), Vector3(0.25, 0.08, 0.18), dark)
-	_part("Radio", Vector3(0.27, 1.24, -0.14), Vector3(0.10, 0.19, 0.07), dark)
-	_part("RadioAntenna", Vector3(0.28, 1.39, -0.13), Vector3(0.025, 0.21, 0.025), metal)
-	_part("KneeLeft", Vector3(-0.13, 0.51, -0.115), Vector3(0.20, 0.17, 0.08), gold)
-	_part("KneeRight", Vector3(0.13, 0.51, -0.115), Vector3(0.20, 0.17, 0.08), gold)
-	_gear_on_limb(left_arm, "GloveLeft", Vector3(0, -0.56, -0.02), Vector3(0.19, 0.16, 0.20), dark)
-	_gear_on_limb(right_arm, "GloveRight", Vector3(0, -0.56, -0.02), Vector3(0.19, 0.16, 0.20), dark)
 	tool_mount = Node3D.new()
 	tool_mount.name = "ToolMount"
 	right_arm.add_child(tool_mount)
@@ -222,32 +163,10 @@ func _upgrade_gear() -> void:
 	spray_particles.draw_pass_1 = quad
 	tool_mount.add_child(spray_particles)
 	_create_dig_dust()
-func _gear_on_limb(limb: Node3D, part_name: String, where: Vector3, dims: Vector3, mat: Material) -> void:
-	var model: MeshInstance3D = MeshInstance3D.new()
-	var box: BoxMesh = BoxMesh.new()
-	box.size = dims
-	model.mesh = box
-	model.name = part_name
-	model.material_override = mat
-	model.position = where
-	limb.add_child(model)
 
 func apply_outfit() -> void:
-	var suit_color: Color = GameState.UNIFORM_COLORS[GameState.uniform_index]
-	var helmet_color: Color = GameState.HELMET_COLORS[GameState.helmet_index]
-	for name_str in ["Body"]:
-		var model: MeshInstance3D = get_node_or_null(name_str) as MeshInstance3D
-		if model != null:
-			model.material_override = _mat(suit_color)
-	for item in [left_arm, right_arm]:
-		var arm_node: Node3D = item as Node3D
-		for child in arm_node.get_children():
-			if child is MeshInstance3D and child.name.begins_with("Glove") == false:
-				(child as MeshInstance3D).material_override = _mat(suit_color)
-	for name_str in ["Helmet"]:
-		var model: MeshInstance3D = get_node_or_null(name_str) as MeshInstance3D
-		if model != null:
-			model.material_override = _mat(helmet_color)
+	uniform_material.albedo_color = GameState.UNIFORM_COLORS[GameState.uniform_index]
+	helmet_material.albedo_color = GameState.HELMET_COLORS[GameState.helmet_index]
 
 func set_action_state(tool: ToolEnums.ToolType, continuous: bool) -> void:
 	active_tool = tool

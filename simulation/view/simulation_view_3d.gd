@@ -23,6 +23,8 @@ var current_cell_colors: Dictionary = {}
 var target_cell_colors: Dictionary = {}
 var animating_cells: Dictionary = {}
 var target_cursor_pos: Vector3 = Vector3.ZERO
+var canopy_materials: Dictionary[Material, ShaderMaterial] = {}
+var canopy_wind: Vector2 = Vector2.ZERO
 var camera_tween: Tween
 
 var healthy_trees: Array[PackedScene] = [
@@ -68,6 +70,11 @@ func _ready() -> void:
 	_apply_sun_quality()
 
 func _process(delta: float) -> void:
+	var wind: Vector2 = GameState.wind_direction * clampf(GameState.wind_speed_kmh / 22.0, 0.0, 1.5)
+	if not canopy_wind.is_equal_approx(wind):
+		canopy_wind = wind
+		for material: ShaderMaterial in canopy_materials.values():
+			material.set_shader_parameter("wind", wind)
 	_update_dynamic_fog(delta)
 	_animate_cursor(delta)
 	_animate_cell_colors(delta)
@@ -134,15 +141,14 @@ func _init_ground_mesh(width: int, height: int) -> void:
 	var mm: MultiMesh = MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
+	mm.use_custom_data = true
 	mm.instance_count = total_count
 
 	var box_mesh: BoxMesh = BoxMesh.new()
 	box_mesh.size = Vector3(cell_sz, 0.16, cell_sz)
 
-	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX
-	mat.vertex_color_use_as_albedo = true
-	mat.roughness = 0.92
+	var mat: ShaderMaterial = ShaderMaterial.new()
+	mat.shader = preload("res://simulation/view/peat_surface.gdshader")
 	box_mesh.material = mat
 	mm.mesh = box_mesh
 
@@ -160,6 +166,26 @@ func _init_ground_mesh(width: int, height: int) -> void:
 			idx += 1
 
 	multi_mesh_instance.multimesh = mm
+
+func _make_canopy_tree(scene: PackedScene) -> Node3D:
+	var tree: Node3D = scene.instantiate() as Node3D
+	var meshes: Array[Node] = tree.find_children("*", "MeshInstance3D", true, false)
+	if tree is MeshInstance3D:
+		meshes.append(tree)
+	for node: Node in meshes:
+		var model: MeshInstance3D = node as MeshInstance3D
+		for surface: int in range(model.mesh.get_surface_count()):
+			var source: StandardMaterial3D = model.mesh.surface_get_material(surface) as StandardMaterial3D
+			if source == null or not source.resource_name.begins_with("Leaves_"):
+				continue
+			if not canopy_materials.has(source):
+				var foliage: ShaderMaterial = ShaderMaterial.new()
+				foliage.shader = preload("res://simulation/view/canopy.gdshader")
+				foliage.set_shader_parameter("leaves", source.albedo_texture)
+				foliage.set_shader_parameter("wind", canopy_wind)
+				canopy_materials[source] = foliage
+			model.set_surface_override_material(surface, canopy_materials[source])
+	return tree
 
 func _init_perimeter_walls(width: int, height: int) -> void:
 	for child in perimeter_walls.get_children():
@@ -218,7 +244,7 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 				var q1_pos: Vector3 = Vector3(-0.78 + (rand_b - 0.5) * 0.25, 0.0, -0.78 + (rand_a - 0.5) * 0.25)
 				if rand_a > 0.36:
 					var tree_idx: int = int(rand_b * float(healthy_trees.size())) % healthy_trees.size()
-					var tree_instance: Node3D = healthy_trees[tree_idx].instantiate() as Node3D
+					var tree_instance: Node3D = _make_canopy_tree(healthy_trees[tree_idx])
 					var scale_xz: float = 1.10 + (rand_a * 0.25)
 					var scale_y: float = 1.55 + (rand_a * 0.35)
 					tree_instance.scale = Vector3(scale_xz, scale_y, scale_xz)
@@ -319,7 +345,7 @@ func _init_border_forest(width: int, height: int) -> void:
 			var rand_val: float = hash_val - floorf(hash_val)
 			if rand_val > 0.35:
 				var tree_idx: int = int(rand_val * float(healthy_trees.size())) % healthy_trees.size()
-				var tree_inst: Node3D = healthy_trees[tree_idx].instantiate() as Node3D
+				var tree_inst: Node3D = _make_canopy_tree(healthy_trees[tree_idx])
 				var scale_xz: float = 1.15 + (rand_val * 0.30)
 				var scale_y: float = 1.65 + (rand_val * 0.40)
 				tree_inst.scale = Vector3(scale_xz, scale_y, scale_xz)
@@ -494,6 +520,8 @@ func _update_cell_visual(pos: Vector2i, cell: PeatCellData) -> void:
 	var target_color: Color = Color.WHITE
 	var show_heatmap: bool = GameState.is_thermal_active or (GameState.current_phase == ToolEnums.GamePhase.PLANNING)
 
+	var wetness_data: float = clampf(cell.soil_moisture, 0.0, 1.0)
+	multi_mesh_instance.multimesh.set_instance_custom_data(index, Color(wetness_data, float(not show_heatmap), 0.0, 1.0))
 	if show_heatmap:
 		if cell.has_well:
 			target_color = Color(0.15, 0.65, 1.0, 1.0)
