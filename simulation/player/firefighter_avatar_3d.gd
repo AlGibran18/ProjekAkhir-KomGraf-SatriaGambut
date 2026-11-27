@@ -146,6 +146,7 @@ func _build_equipped_tools() -> void:
 	spray_particles.visibility_aabb = AABB(Vector3(-4, -4, -10), Vector3(8, 8, 12))
 	var process_mat: ParticleProcessMaterial = ParticleProcessMaterial.new()
 	process_mat.direction = Vector3(0, 0, -1)
+	process_mat.particle_flag_align_y = true
 	process_mat.spread = 6.0
 	process_mat.initial_velocity_min = 8.0
 	process_mat.initial_velocity_max = 13.0
@@ -153,13 +154,8 @@ func _build_equipped_tools() -> void:
 	process_mat.color = Color(0.56, 0.86, 1.0, 0.78)
 	spray_particles.process_material = process_mat
 	var quad: QuadMesh = QuadMesh.new()
-	quad.size = Vector2(0.04, 0.15)
-	var water_mat: StandardMaterial3D = StandardMaterial3D.new()
-	water_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	water_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	water_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	water_mat.albedo_color = Color(0.54, 0.86, 1.0, 0.68)
-	quad.material = water_mat
+	quad.size = Vector2(0.060, 0.25)
+	quad.material = preload("res://environment/vfx/water_drop.tres")
 	spray_particles.draw_pass_1 = quad
 	tool_mount.add_child(spray_particles)
 	_create_dig_dust()

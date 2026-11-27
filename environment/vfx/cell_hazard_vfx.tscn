@@ -1,6 +1,24 @@
-[gd_scene load_steps=16 format=3 uid="uid://bv9m3k8p4x2qr"]
+[gd_scene format=3 uid="uid://bv9m3k8p4x2qr"]
 
 [ext_resource type="Script" path="res://environment/vfx/cell_hazard_vfx.gd" id="1_vfx"]
+
+[ext_resource type="Shader" path="res://environment/vfx/flame.gdshader" id="flame"]
+[ext_resource type="Shader" path="res://environment/vfx/smoke.gdshader" id="smoke"]
+
+[ext_resource type="Shader" path="res://environment/vfx/trunk_fire.gdshader" id="trunk"]
+
+[sub_resource type="ShaderMaterial" id="TrunkMaterial"]
+shader = ExtResource("trunk")
+
+[sub_resource type="CylinderMesh" id="TrunkFlameShell"]
+material = SubResource("TrunkMaterial")
+top_radius = 0.29
+bottom_radius = 0.42
+height = 1.0
+radial_segments = 16
+rings = 5
+cap_top = false
+cap_bottom = false
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_flame"]
 emission_shape = 3
@@ -14,19 +32,12 @@ scale_min = 0.6
 scale_max = 1.4
 color = Color(1, 0.48, 0.08, 0.9)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_flame"]
-transparency = 1
-shading_mode = 0
-vertex_color_use_as_albedo = true
-albedo_color = Color(1, 0.65, 0.15, 0.9)
-billboard_mode = 3
-particles_anim_h_frames = 1
-particles_anim_v_frames = 1
-particles_anim_loop = false
+[sub_resource type="ShaderMaterial" id="Material_flame"]
+shader = ExtResource("flame")
 
 [sub_resource type="QuadMesh" id="QuadMesh_flame"]
-material = SubResource("StandardMaterial3D_flame")
-size = Vector2(0.55, 0.85)
+material = SubResource("Material_flame")
+size = Vector2(0.98, 1.9)
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_thick_smoke"]
 emission_shape = 3
@@ -40,18 +51,11 @@ scale_min = 1.2
 scale_max = 2.6
 color = Color(0.55, 0.52, 0.5, 0.55)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_smoke"]
-transparency = 1
-shading_mode = 0
-vertex_color_use_as_albedo = true
-albedo_color = Color(0.72, 0.7, 0.68, 0.48)
-billboard_mode = 3
-particles_anim_h_frames = 1
-particles_anim_v_frames = 1
-particles_anim_loop = false
+[sub_resource type="ShaderMaterial" id="Material_smoke"]
+shader = ExtResource("smoke")
 
 [sub_resource type="QuadMesh" id="QuadMesh_smoke"]
-material = SubResource("StandardMaterial3D_smoke")
+material = SubResource("Material_smoke")
 size = Vector2(1.25, 1.25)
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_sub_smoke"]
@@ -67,7 +71,7 @@ scale_max = 1.4
 color = Color(0.88, 0.88, 0.9, 0.42)
 
 [sub_resource type="QuadMesh" id="QuadMesh_sub_smoke"]
-material = SubResource("StandardMaterial3D_smoke")
+material = SubResource("Material_smoke")
 size = Vector2(0.75, 0.75)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ember"]
@@ -90,24 +94,29 @@ scale_min = 0.8
 scale_max = 1.8
 color = Color(0.95, 0.98, 1, 0.8)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_steam"]
-transparency = 1
-shading_mode = 0
-vertex_color_use_as_albedo = true
-albedo_color = Color(0.95, 0.98, 1, 0.75)
-billboard_mode = 3
-particles_anim_h_frames = 1
-particles_anim_v_frames = 1
-particles_anim_loop = false
+[sub_resource type="ShaderMaterial" id="Material_steam"]
+shader = ExtResource("smoke")
 
 [sub_resource type="QuadMesh" id="QuadMesh_steam"]
-material = SubResource("StandardMaterial3D_steam")
+material = SubResource("Material_steam")
 size = Vector2(0.8, 0.8)
+
+[sub_resource type="ParticleProcessMaterial" id="TreeCombustion"]
+emission_shape = 3
+emission_box_extents = Vector3(0.38, 1.0, 0.38)
+direction = Vector3(0, 1, 0)
+spread = 14.0
+initial_velocity_min = 0.5
+initial_velocity_max = 1.9
+scale_min = 1.05
+scale_max = 1.85
 
 [node name="CellHazardVFX" type="Node3D"]
 script = ExtResource("1_vfx")
 
 [node name="FlameParticles" type="GPUParticles3D" parent="."]
+cast_shadow = 0
+visibility_aabb = AABB(-24,-4,-24,48,36,48)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
 emitting = false
 amount = 35
@@ -115,7 +124,22 @@ lifetime = 1.1
 process_material = SubResource("ParticleProcessMaterial_flame")
 draw_pass_1 = SubResource("QuadMesh_flame")
 
+[node name="TrunkFlameShell" type="MeshInstance3D" parent="."]
+visible = false
+cast_shadow = 0
+mesh = SubResource("TrunkFlameShell")
+
+[node name="TreeFlames" type="GPUParticles3D" parent="."]
+emitting = false
+amount = 55
+lifetime = 1.35
+visibility_aabb = AABB(-10,-10,-10,20,32,20)
+process_material = SubResource("TreeCombustion")
+draw_pass_1 = SubResource("QuadMesh_flame")
+
 [node name="ThickSmokeParticles" type="GPUParticles3D" parent="."]
+cast_shadow = 0
+visibility_aabb = AABB(-24,-4,-24,48,36,48)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
 emitting = false
 amount = 26
@@ -124,6 +148,8 @@ process_material = SubResource("ParticleProcessMaterial_thick_smoke")
 draw_pass_1 = SubResource("QuadMesh_smoke")
 
 [node name="SubsurfaceSmokeParticles" type="GPUParticles3D" parent="."]
+cast_shadow = 0
+visibility_aabb = AABB(-24,-4,-24,48,36,48)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
 emitting = false
 amount = 12
@@ -138,6 +164,8 @@ material_override = SubResource("StandardMaterial3D_ember")
 mesh = SubResource("BoxMesh_ember")
 
 [node name="SteamBurstParticles" type="GPUParticles3D" parent="."]
+cast_shadow = 0
+visibility_aabb = AABB(-24,-4,-24,48,36,48)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
 emitting = false
 amount = 48

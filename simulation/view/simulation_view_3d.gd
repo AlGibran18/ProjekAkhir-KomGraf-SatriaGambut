@@ -251,6 +251,16 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 					tree_instance.rotation.y = rand_b * TAU
 					tree_instance.position = q1_pos
 					tree_holder.add_child(tree_instance)
+					var tree_height: float = 0.0
+					var meshes: Array[Node] = tree_instance.find_children("*", "MeshInstance3D", true, false)
+					if tree_instance is MeshInstance3D:
+						meshes.append(tree_instance)
+					for node: Node in meshes:
+						var mesh: MeshInstance3D = node as MeshInstance3D
+						var bounds: AABB = mesh.global_transform * mesh.get_aabb()
+						tree_height = maxf(tree_height, bounds.end.y - tree_instance.global_position.y)
+					cell_holder.set_meta("tree_height", tree_height)
+					cell_holder.set_meta("tree_base", q1_pos)
 
 					var trunk_body: StaticBody3D = StaticBody3D.new()
 					trunk_body.name = "TreeCollider"
@@ -537,7 +547,7 @@ func _update_cell_visual(pos: Vector2i, cell: PeatCellData) -> void:
 		if cell.has_well:
 			target_color = Color(0.16, 0.34, 0.28, 1.0)
 		elif cell.is_burning():
-			target_color = Color(0.88, 0.28, 0.06, 1.0)
+			target_color = Color(0.23, 0.12, 0.075, 1.0)
 		elif cell.has_ember():
 			target_color = Color(0.16, 0.10, 0.07, 1.0)
 		elif cell.is_firebreak:
@@ -583,7 +593,7 @@ func _update_cell_visual(pos: Vector2i, cell: PeatCellData) -> void:
 			if tree_holder != null:
 				tree_holder.visible = true
 				tree_holder.process_mode = Node.PROCESS_MODE_INHERIT
-				if cell.is_burning() or cell.is_burnt:
+				if cell.is_burnt and not cell.is_burning():
 					if tree_holder.get_child_count() > 0:
 						var first_tree: Node3D = tree_holder.get_child(0)
 						if not first_tree.name.begins_with("DeadTree") and not first_tree.name.begins_with("TreeCollider"):
@@ -610,6 +620,10 @@ func _sync_cell_vfx(pos: Vector2i, cell: PeatCellData) -> void:
 		if not vfx_nodes.has(pos):
 			var vfx_inst: CellHazardVFX = hazard_vfx_scene.instantiate() as CellHazardVFX
 			vfx_inst.position = Vector3(float(pos.x) * GameState.CELL_SIZE, 0.0, float(pos.y) * GameState.CELL_SIZE)
+			var holder: Node3D = cell_visual_nodes.get(pos)
+			if holder != null and holder.has_meta("tree_height"):
+				vfx_inst.tree_height = holder.get_meta("tree_height")
+				vfx_inst.tree_base = holder.get_meta("tree_base")
 			vfx_container.add_child(vfx_inst)
 			vfx_nodes[pos] = vfx_inst
 		var vfx: CellHazardVFX = vfx_nodes[pos]
@@ -619,6 +633,7 @@ func _sync_cell_vfx(pos: Vector2i, cell: PeatCellData) -> void:
 		if vfx_nodes.has(pos):
 			var old_vfx: CellHazardVFX = vfx_nodes[pos]
 			vfx_nodes.erase(pos)
+			old_vfx.update_state(cell, GameState.is_thermal_active, GameState.wind_direction, false)
 			get_tree().create_timer(1.2).timeout.connect(func() -> void:
 				if is_instance_valid(old_vfx):
 					old_vfx.queue_free()
