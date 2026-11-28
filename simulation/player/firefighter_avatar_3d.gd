@@ -29,6 +29,8 @@ func _ready() -> void:
 	right_leg = responder.get_node("RightLeg")
 	left_arm = responder.get_node("LeftArm")
 	right_arm = responder.get_node("RightArm")
+	var brushed_metal: StandardMaterial3D = preload("res://assets/textures/field/alloy.tres").duplicate()
+	brushed_metal.metallic = 0.78
 	for mesh_node: Node in responder.find_children("*", "MeshInstance3D", true, false):
 		var model: MeshInstance3D = mesh_node as MeshInstance3D
 		for surface: int in range(model.mesh.get_surface_count()):
@@ -36,8 +38,14 @@ func _ready() -> void:
 			match material.resource_name:
 				"Suit":
 					if uniform_material == null:
-						uniform_material = material.duplicate()
+						uniform_material = preload("res://assets/textures/field/cloth.tres").duplicate()
 					model.set_surface_override_material(surface, uniform_material)
+				"Steel":
+					model.set_surface_override_material(surface, brushed_metal)
+				"Trousers", "Canvas":
+					var textile: StandardMaterial3D = preload("res://assets/textures/field/cloth.tres").duplicate()
+					textile.albedo_color = material.albedo_color
+					model.set_surface_override_material(surface, textile)
 				"Helmet":
 					helmet_material = material.duplicate()
 					model.set_surface_override_material(surface, helmet_material)
@@ -100,15 +108,16 @@ func animate_movement(delta: float, is_moving: bool, sprinting: bool) -> void:
 		else:
 			tool_mount.rotation = tool_mount.rotation.lerp(Vector3.ZERO, minf(1.0, delta * 9.0))
 
-func _mat(tint: Color) -> Material:
-	var m: StandardMaterial3D = StandardMaterial3D.new()
+func _tool_metal(tint: Color) -> Material:
+	var m: StandardMaterial3D = preload("res://assets/textures/field/alloy.tres").duplicate()
 	m.albedo_color = tint
-	m.roughness = 0.78
+	m.metallic = 0.76
+	m.roughness = 0.62
 	return m
 
 func _build_equipped_tools() -> void:
-	var metal: Material = _mat(Color(0.44, 0.54, 0.58))
-	var gold: Material = _mat(Color(1.0, 0.78, 0.16))
+	var metal: Material = _tool_metal(Color(0.44, 0.54, 0.58))
+	var gold: Material = _tool_metal(Color(1.0, 0.78, 0.16))
 	tool_mount = Node3D.new()
 	tool_mount.name = "ToolMount"
 	right_arm.add_child(tool_mount)

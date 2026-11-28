@@ -1,6 +1,9 @@
 shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
+uniform sampler2D litter : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D relief : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D grain : filter_linear_mipmap, repeat_enable;
 varying vec2 ground;
 varying float moisture;
 varying float field_view;
@@ -27,8 +30,13 @@ void fragment() {
 	float hummocks = noise2(ground * 1.4);
 	float fibers = noise2(ground * vec2(19.0, 7.0));
 	float pools = smoothstep(0.27, 0.64, moisture - hummocks * 0.32) * field_view;
-	float shade = 0.76 + 0.28 * hummocks + 0.16 * fibers;
-	ALBEDO = COLOR.rgb * mix(1.0, shade, field_view);
-	ROUGHNESS = mix(0.95, 0.19, pools);
-	SPECULAR = mix(0.18, 0.78, pools);
+	vec2 uv = ground * 0.45;
+	vec3 forest = texture(litter, uv).rgb;
+	vec3 moisture_tint = mix(vec3(1.14,1.06,0.93), vec3(0.57,0.67,0.64), moisture);
+	float shade = 0.85 + hummocks * 0.25 + fibers * 0.08;
+	ALBEDO = mix(COLOR.rgb, forest * moisture_tint * shade * (0.77 + COLOR.rgb), field_view);
+	NORMAL_MAP = mix(vec3(0.5,0.5,1.0), texture(relief, uv).rgb, field_view);
+	NORMAL_MAP_DEPTH = mix(0.82, 0.22, pools);
+	ROUGHNESS = mix(0.96, mix(texture(grain, uv).r, 0.13, pools), field_view);
+	SPECULAR = mix(0.18, 0.84, pools);
 }

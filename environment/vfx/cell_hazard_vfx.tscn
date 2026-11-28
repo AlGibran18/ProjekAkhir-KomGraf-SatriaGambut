@@ -7,6 +7,8 @@
 
 [ext_resource type="Shader" path="res://environment/vfx/trunk_fire.gdshader" id="trunk"]
 
+[ext_resource type="Shader" path="res://environment/vfx/peat_embers.gdshader" id="embers"]
+
 [sub_resource type="ShaderMaterial" id="TrunkMaterial"]
 shader = ExtResource("trunk")
 
@@ -74,13 +76,11 @@ color = Color(0.88, 0.88, 0.9, 0.42)
 material = SubResource("Material_smoke")
 size = Vector2(0.75, 0.75)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ember"]
-transparency = 1
-shading_mode = 0
-albedo_color = Color(1, 0.22, 0.04, 0.85)
+[sub_resource type="ShaderMaterial" id="PeatEmbers"]
+shader = ExtResource("embers")
 
-[sub_resource type="BoxMesh" id="BoxMesh_ember"]
-size = Vector3(2.4, 0.04, 2.4)
+[sub_resource type="PlaneMesh" id="PeatScorch"]
+size = Vector2(2.4, 2.4)
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_steam"]
 emission_shape = 1
@@ -160,8 +160,8 @@ draw_pass_1 = SubResource("QuadMesh_sub_smoke")
 [node name="EmberGlowMesh" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
 visible = false
-material_override = SubResource("StandardMaterial3D_ember")
-mesh = SubResource("BoxMesh_ember")
+material_override = SubResource("PeatEmbers")
+mesh = SubResource("PeatScorch")
 
 [node name="SteamBurstParticles" type="GPUParticles3D" parent="."]
 cast_shadow = 0

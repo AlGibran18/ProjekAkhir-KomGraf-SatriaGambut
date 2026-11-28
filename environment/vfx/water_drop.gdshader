@@ -20,8 +20,8 @@ void fragment() {
 	float glint = exp(-16.0 * dot(p + vec2(0.28,0.32),p + vec2(0.28,0.32)));
 	ALBEDO = mix(vec3(0.38,0.59,0.65), vec3(0.91,0.98,1.0), rim * 0.53 + glint * 0.44);
 	NORMAL = normalize(vec3(p.x, -p.y, sqrt(max(0.02,1.0-r2))));
-	ROUGHNESS = 0.12;
+	ROUGHNESS = mix(0.07, 0.24, age);
 	SPECULAR = 0.92;
 	ALPHA = COLOR.a * (0.35 + rim * 0.38 + glint * 0.26) * (1.0 - smoothstep(0.68,1.0,r2))
-		* (1.0 - smoothstep(0.70,1.0,age));
+		* (1.0 - smoothstep(0.70,1.0,age)) * mix(0.70, 1.0, rim);
 }

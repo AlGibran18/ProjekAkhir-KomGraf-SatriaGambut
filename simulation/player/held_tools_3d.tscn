@@ -1,10 +1,36 @@
-[gd_scene load_steps=23 format=3 uid="uid://ca9k5m3p7x2we"]
+[gd_scene format=3 uid="uid://ca9k5m3p7x2we"]
 
 [ext_resource type="Script" path="res://simulation/player/held_tools_3d.gd" id="1_held"]
 
 [ext_resource type="Material" path="res://environment/vfx/water_drop.tres" id="water_drop"]
 
+[ext_resource type="Texture2D" path="res://assets/textures/field/cloth_color.jpg" id="cloth_color"]
+
+[ext_resource type="Texture2D" path="res://assets/textures/field/cloth_normal.jpg" id="cloth_normal"]
+
+[ext_resource type="Texture2D" path="res://assets/textures/field/cloth_rough.jpg" id="cloth_rough"]
+
+[ext_resource type="Texture2D" path="res://assets/textures/field/timber_color.jpg" id="timber_color"]
+
+[ext_resource type="Texture2D" path="res://assets/textures/field/timber_normal.jpg" id="timber_normal"]
+
+[ext_resource type="Texture2D" path="res://assets/textures/field/timber_rough.jpg" id="timber_rough"]
+
+[ext_resource type="Texture2D" path="res://assets/textures/field/alloy_color.jpg" id="alloy_color"]
+
+[ext_resource type="Texture2D" path="res://assets/textures/field/alloy_normal.jpg" id="alloy_normal"]
+
+[ext_resource type="Texture2D" path="res://assets/textures/field/alloy_rough.jpg" id="alloy_rough"]
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sleeve"]
+albedo_texture = ExtResource("cloth_color")
+normal_enabled = true
+normal_texture = ExtResource("cloth_normal")
+normal_scale = 0.4
+roughness_texture = ExtResource("cloth_rough")
+roughness_texture_channel = 0
+uv1_triplanar = true
+uv1_scale = Vector3(3,3,3)
 albedo_color = Color(0.86, 0.2, 0.14, 1)
 roughness = 0.65
 
@@ -15,6 +41,14 @@ bottom_radius = 0.052
 height = 0.24
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_glove"]
+albedo_texture = ExtResource("cloth_color")
+normal_enabled = true
+normal_texture = ExtResource("cloth_normal")
+normal_scale = 0.4
+roughness_texture = ExtResource("cloth_rough")
+roughness_texture_channel = 0
+uv1_triplanar = true
+uv1_scale = Vector3(3,3,3)
 albedo_color = Color(0.14, 0.15, 0.17, 1)
 roughness = 0.7
 
@@ -23,6 +57,14 @@ material = SubResource("StandardMaterial3D_glove")
 size = Vector3(0.08, 0.075, 0.11)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wood"]
+albedo_texture = ExtResource("timber_color")
+normal_enabled = true
+normal_texture = ExtResource("timber_normal")
+normal_scale = 0.4
+roughness_texture = ExtResource("timber_rough")
+roughness_texture_channel = 0
+uv1_triplanar = true
+uv1_scale = Vector3(3,3,3)
 albedo_color = Color(0.45, 0.28, 0.14, 1)
 roughness = 0.8
 
@@ -33,6 +75,14 @@ bottom_radius = 0.018
 height = 0.72
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_steel"]
+albedo_texture = ExtResource("alloy_color")
+normal_enabled = true
+normal_texture = ExtResource("alloy_normal")
+normal_scale = 0.4
+roughness_texture = ExtResource("alloy_rough")
+roughness_texture_channel = 0
+uv1_triplanar = true
+uv1_scale = Vector3(3,3,3)
 albedo_color = Color(0.65, 0.68, 0.72, 1)
 metallic = 0.6
 roughness = 0.35
@@ -48,6 +98,14 @@ bottom_radius = 0.028
 height = 0.1
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rubber"]
+albedo_texture = ExtResource("alloy_color")
+normal_enabled = true
+normal_texture = ExtResource("alloy_normal")
+normal_scale = 0.4
+roughness_texture = ExtResource("alloy_rough")
+roughness_texture_channel = 0
+uv1_triplanar = true
+uv1_scale = Vector3(3,3,3)
 albedo_color = Color(0.12, 0.13, 0.15, 1)
 roughness = 0.7
 
@@ -58,6 +116,14 @@ bottom_radius = 0.028
 height = 0.4
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_brass"]
+albedo_texture = ExtResource("alloy_color")
+normal_enabled = true
+normal_texture = ExtResource("alloy_normal")
+normal_scale = 0.4
+roughness_texture = ExtResource("alloy_rough")
+roughness_texture_channel = 0
+uv1_triplanar = true
+uv1_scale = Vector3(3,3,3)
 albedo_color = Color(0.88, 0.7, 0.22, 1)
 metallic = 0.7
 roughness = 0.3
@@ -69,6 +135,14 @@ bottom_radius = 0.036
 height = 0.05
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nozzle_red"]
+albedo_texture = ExtResource("alloy_color")
+normal_enabled = true
+normal_texture = ExtResource("alloy_normal")
+normal_scale = 0.4
+roughness_texture = ExtResource("alloy_rough")
+roughness_texture_channel = 0
+uv1_triplanar = true
+uv1_scale = Vector3(3,3,3)
 albedo_color = Color(0.85, 0.18, 0.15, 1)
 roughness = 0.4
 

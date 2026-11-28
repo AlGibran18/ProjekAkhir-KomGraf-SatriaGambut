@@ -12,8 +12,6 @@ extends Node3D
 @onready var fire_light: OmniLight3D = $FireLight
 
 var allow_dynamic_light: bool = false
-var pulse_time: float = 0.0
-var is_thermal_ember: bool = false
 var last_intensity: float = 1.0
 var ember_sparks: GPUParticles3D
 var tree_height: float = 0.0
@@ -82,15 +80,6 @@ func _process(delta: float) -> void:
 		light_phase += delta * 11.0
 		var flicker: float = 0.88 + 0.08 * sin(light_phase) + 0.04 * sin(light_phase * 2.3)
 		fire_light.light_energy = lerpf(0.8, 2.7, last_intensity) * flicker
-	if ember_glow_mesh.visible:
-		pulse_time += delta * 4.5
-		var pulse: float = 0.7 + (0.3 * sin(pulse_time))
-		var mat: StandardMaterial3D = ember_glow_mesh.material_override as StandardMaterial3D
-		if mat != null:
-			if is_thermal_ember:
-				mat.albedo_color = Color(1.0, 0.22 * pulse, 0.04, 0.90)
-			else:
-				mat.albedo_color = Color(0.85, 0.20, 0.04, 0.35 * pulse)
 
 func update_state(cell: PeatCellData, thermal_active: bool, wind_dir: Vector2, can_use_light: bool) -> void:
 	allow_dynamic_light = can_use_light
@@ -122,7 +111,8 @@ func update_state(cell: PeatCellData, thermal_active: bool, wind_dir: Vector2, c
 	thick_smoke_particles.emitting = burning
 	subsurface_smoke_particles.emitting = (not burning) and has_ember
 
-	is_thermal_ember = thermal_active and has_ember
+	var embers: ShaderMaterial = ember_glow_mesh.material_override as ShaderMaterial
+	embers.set_shader_parameter("thermal", thermal_active)
 	ember_glow_mesh.visible = has_ember and (thermal_active or not burning)
 	fire_light.visible = burning and allow_dynamic_light and (GameState.current_graphics_quality != GameState.GraphicsQuality.LOW)
 

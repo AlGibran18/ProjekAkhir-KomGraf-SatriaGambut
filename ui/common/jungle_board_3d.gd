@@ -104,6 +104,9 @@ func _attach(builder: MeshBuilder, double_sided: bool) -> void:
 	var instance: MeshInstance3D = MeshInstance3D.new()
 	instance.mesh = builder.to_mesh()
 	var material: StandardMaterial3D = StandardMaterial3D.new()
+	if builder == wood:
+		material = preload("res://assets/textures/field/timber.tres").duplicate()
+		material.uv1_scale = Vector3(0.4, 0.65, 0.4)
 	material.vertex_color_use_as_albedo = true
 	material.vertex_color_is_srgb = true
 	material.roughness = 0.92

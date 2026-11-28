@@ -304,7 +304,7 @@ text = "CREDITS — SATRIA GAMBUT"
 [node name="Body" type="Label" parent="CreditsModal/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
-text = "TIM PENGEMBANG (GRAFIKA KOMPUTER):\n• Ketua Tim: [Nama Ketua Tim] — NIM: [NIM Ketua]\n• Anggota 1: [Nama Anggota 1] — NIM: [NIM Anggota 1]\n• Anggota 2: [Nama Anggota 2] — NIM: [NIM Anggota 2]\n• Anggota 3: [Nama Anggota 3] — NIM: [NIM Anggota 3]\n\nREFERENSI ILMIAH:\n• Riset Pemodelan Risiko Kebakaran Gambut PeatFR / PFVI\n  (University of Nottingham, ITB, & IPB — Prof. Bagus Muljadi & Dr. Adilan Mahdiasa)\n\nATRIBUSI ASET & TEKNOLOGI:\n• Engine: Godot Engine 4 (Standalone Offline Desktop)\n• Aset 3D Alam: Stylized Nature MegaKit oleh Quaternius & Nature Kit oleh Kenney.nl (CC0 1.0)\n• Efek Suara: Disintesis Lokal Offline (.wav)
+text = "TIM PENGEMBANG (GRAFIKA KOMPUTER):\n• Ketua Tim: [Nama Ketua Tim] — NIM: [NIM Ketua]\n• Anggota 1: [Nama Anggota 1] — NIM: [NIM Anggota 1]\n• Anggota 2: [Nama Anggota 2] — NIM: [NIM Anggota 2]\n• Anggota 3: [Nama Anggota 3] — NIM: [NIM Anggota 3]\n\nREFERENSI ILMIAH:\n• Riset Pemodelan Risiko Kebakaran Gambut PeatFR / PFVI\n  (University of Nottingham, ITB, & IPB — Prof. Bagus Muljadi & Dr. Adilan Mahdiasa)\n\nATRIBUSI ASET & TEKNOLOGI:\n• Engine: Godot Engine 4 (Standalone Offline Desktop)\n• Aset 3D Alam: Stylized Nature MegaKit oleh Quaternius & Nature Kit oleh Kenney.nl (CC0 1.0)\n• Tekstur permukaan dan panorama HDR oleh Poly Haven (CC0 1.0)\n• Efek Suara: Disintesis Lokal Offline (.wav)
 • Font: Lilita One & Barlow Condensed (SIL OFL 1.1, Google Fonts)
 • Papan kayu jungle sawit: model 3D prosedural buatan tim"
 autowrap_mode = 3

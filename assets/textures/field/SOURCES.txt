@@ -1,0 +1,16 @@
+Poly Haven assets, licensed under CC0 1.0
+https://polyhaven.com/license
+
+peat  https://polyhaven.com/a/forest_floor
+bark  https://polyhaven.com/a/bark_brown_02
+masonry  https://polyhaven.com/a/concrete_floor_worn_02
+cloth  https://polyhaven.com/a/denim_fabric
+alloy  https://polyhaven.com/a/metal_plate
+stone  https://polyhaven.com/a/rock_face_03
+timber  https://polyhaven.com/a/wood_planks_dirt
+veld_sky  https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky
+
+Images resized for offline gameplay. Cloth, alloy and masonry albedo converted to neutral tints. Normal maps use OpenGL orientation.
+
+Menu backdrop projected from Rainforest Trail, Poly Haven (CC0 1.0).
+https://polyhaven.com/a/rainforest_trail

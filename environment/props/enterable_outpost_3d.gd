@@ -25,12 +25,16 @@ var door_clear_time: float = 0.0
 var door_transitioning: bool = false
 
 func _ready() -> void:
-	wall = _material(Color(0.38, 0.43, 0.37))
-	timber = _material(Color(0.31, 0.22, 0.14))
+	wall = _material(Color(0.70, 0.72, 0.60), preload("res://assets/textures/field/masonry.tres"))
+	timber = _material(Color(0.94, 0.83, 0.68), preload("res://assets/textures/field/timber.tres"))
 	roof_mat = _material(Color(0.15, 0.25, 0.25))
-	glass_mat = _material(Color(0.17, 0.43, 0.49))
+	var glazing: StandardMaterial3D = StandardMaterial3D.new()
+	glazing.albedo_color = Color(0.18, 0.33, 0.35)
+	glazing.roughness = 0.09
+	glazing.metallic = 0.65
+	glass_mat = glazing
 	accent = _material(Color(0.95, 0.71, 0.15))
-	floor_mat = _material(Color(0.19, 0.20, 0.19))
+	floor_mat = _material(Color(0.50, 0.51, 0.48), preload("res://assets/textures/field/masonry.tres"))
 	_build_outpost()
 	_create_door_prompt()
 	set_physics_process(true)
@@ -51,10 +55,23 @@ func _build_outpost() -> void:
 	_create_animated_door()
 	_solid("Roof", Vector3(0, 3.27, 0), Vector3(7.80, 0.26, 7.90), roof_mat)
 	_visual("RoofRidge", Vector3(0, 3.45, 0), Vector3(0.32, 0.20, 8.0), accent)
-	for side_x in [-3.42, 3.42]:
+	for side_x in [-3.53, 3.53]:
+		_visual("WallFooting", Vector3(side_x, 0.16, 0), Vector3(0.19, 0.29, 7.26), floor_mat)
+		for end_z: float in [-3.49, 3.49]:
+			_visual("CornerPost", Vector3(side_x, 1.62, end_z), Vector3(0.22, 3.22, 0.21), timber)
+		_visual("EaveFascia", Vector3(side_x * 1.09, 3.16, 0), Vector3(0.1, 0.18, 7.93), timber)
+	for side_x in [-3.55, 3.55]:
 		_visual("WindowFrame", Vector3(side_x, 2.10, -0.20), Vector3(0.23, 1.00, 1.80), timber)
 		_visual("WindowBlueGlass", Vector3(side_x + (0.14 if side_x > 0 else -0.14), 2.10, -0.20), Vector3(0.025, 0.75, 1.52), glass_mat)
-	_visual("SignBoard", Vector3(0, 2.98, -3.68), Vector3(2.90, 0.31, 0.10), accent)
+		_visual("WindowMullion", Vector3(side_x * 1.045, 2.10, -0.20), Vector3(0.04, 0.80, 0.045), timber)
+		_visual("WindowSill", Vector3(side_x, 1.59, -0.20), Vector3(0.39, 0.08, 1.97), timber)
+	_visual("SignBoard", Vector3(0, 2.98, -3.68), Vector3(2.90, 0.31, 0.10), timber)
+	var porch_lens: StandardMaterial3D = StandardMaterial3D.new()
+	porch_lens.emission_enabled = true
+	porch_lens.emission = Color(0.94, 0.76, 0.49)
+	for side: float in [-1.0, 1.0]:
+		_visual("LampHousing", Vector3(side * 1.47, 2.62, -3.66), Vector3(0.24, 0.14, 0.19), roof_mat)
+		_visual("LampLens", Vector3(side * 1.47, 2.59, -3.76), Vector3(0.18, 0.065, 0.025), porch_lens)
 	_sign("POSKO SATRIA GAMBUT", Vector3(0, 2.98, -3.765), 21)
 	_sign("PETA OPERASI  |  BRIEFING", Vector3(0, 2.44, 3.29), 19)
 	# Trestle legs + field planning table; east side leaves a clear walk path.
@@ -233,8 +250,8 @@ func _set_door_open(open: bool) -> void:
 			door_leaf_collision.set_deferred("disabled", open)
 	)
 
-func _material(color: Color) -> Material:
-	var m: StandardMaterial3D = StandardMaterial3D.new()
+func _material(color: Color, surface: StandardMaterial3D = preload("res://assets/textures/field/alloy.tres")) -> StandardMaterial3D:
+	var m: StandardMaterial3D = surface.duplicate()
 	m.albedo_color = color
 	m.roughness = 0.85
 	return m
@@ -280,9 +297,9 @@ func _sign(message: String, where: Vector3, font_size_px: int) -> void:
 	var label: Label3D = Label3D.new()
 	label.text = message
 	label.font_size = font_size_px
-	label.pixel_size = 0.0033
+	label.pixel_size = 0.008
 	label.position = where
 	label.rotation.y = PI
 	label.modulate = Color(0.96, 0.98, 0.91)
-	label.no_depth_test = true
+	label.outline_size = 3
 	add_child(label)
