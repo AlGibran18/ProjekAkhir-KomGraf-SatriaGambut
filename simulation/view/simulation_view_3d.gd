@@ -23,6 +23,9 @@ var current_cell_colors: Dictionary = {}
 var target_cell_colors: Dictionary = {}
 var animating_cells: Dictionary = {}
 var target_cursor_pos: Vector3 = Vector3.ZERO
+var canopy_materials: Dictionary[Material, ShaderMaterial] = {}
+var sky_overcast_step: int = -1
+var canopy_wind: Vector2 = Vector2.ZERO
 var camera_tween: Tween
 
 var healthy_trees: Array[PackedScene] = [
@@ -68,6 +71,11 @@ func _ready() -> void:
 	_apply_sun_quality()
 
 func _process(delta: float) -> void:
+	var wind: Vector2 = GameState.wind_direction * clampf(GameState.wind_speed_kmh / 22.0, 0.0, 1.5)
+	if not canopy_wind.is_equal_approx(wind):
+		canopy_wind = wind
+		for material: ShaderMaterial in canopy_materials.values():
+			material.set_shader_parameter("wind", wind)
 	_update_dynamic_fog(delta)
 	_animate_cursor(delta)
 	_animate_cell_colors(delta)
@@ -134,15 +142,17 @@ func _init_ground_mesh(width: int, height: int) -> void:
 	var mm: MultiMesh = MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
+	mm.use_custom_data = true
 	mm.instance_count = total_count
 
 	var box_mesh: BoxMesh = BoxMesh.new()
 	box_mesh.size = Vector3(cell_sz, 0.16, cell_sz)
 
-	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX
-	mat.vertex_color_use_as_albedo = true
-	mat.roughness = 0.92
+	var mat: ShaderMaterial = ShaderMaterial.new()
+	mat.shader = preload("res://simulation/view/peat_surface.gdshader")
+	mat.set_shader_parameter("litter", preload("res://assets/textures/field/peat_color.jpg"))
+	mat.set_shader_parameter("relief", preload("res://assets/textures/field/peat_normal.jpg"))
+	mat.set_shader_parameter("grain", preload("res://assets/textures/field/peat_rough.jpg"))
 	box_mesh.material = mat
 	mm.mesh = box_mesh
 
@@ -160,6 +170,39 @@ func _init_ground_mesh(width: int, height: int) -> void:
 			idx += 1
 
 	multi_mesh_instance.multimesh = mm
+
+func _make_vegetation(scene: PackedScene) -> Node3D:
+	var tree: Node3D = scene.instantiate() as Node3D
+	var meshes: Array[Node] = tree.find_children("*", "MeshInstance3D", true, false)
+	if tree is MeshInstance3D:
+		meshes.append(tree)
+	for node: Node in meshes:
+		var model: MeshInstance3D = node as MeshInstance3D
+		for surface: int in range(model.mesh.get_surface_count()):
+			var source: StandardMaterial3D = model.mesh.surface_get_material(surface) as StandardMaterial3D
+			if source != null and source.resource_name.begins_with("Bark"):
+				model.set_surface_override_material(surface, preload("res://assets/textures/field/bark.tres"))
+				continue
+			if source == null or not (source.resource_name.begins_with("Leaves") or source.resource_name == "Grass"):
+				continue
+			if not canopy_materials.has(source):
+				var foliage: ShaderMaterial = ShaderMaterial.new()
+				foliage.shader = preload("res://simulation/view/canopy.gdshader")
+				foliage.set_shader_parameter("leaves", source.albedo_texture)
+				foliage.set_shader_parameter("wind", canopy_wind)
+				foliage.set_shader_parameter("wetness", clampf(GameState.global_rainfall_rate / 12.0, 0.0, 1.0))
+				canopy_materials[source] = foliage
+			model.set_surface_override_material(surface, canopy_materials[source])
+	return tree
+
+func _textured_prop(scene: PackedScene, material: Material) -> Node3D:
+	var prop: Node3D = scene.instantiate() as Node3D
+	var parts: Array[Node] = prop.find_children("*", "MeshInstance3D", true, false)
+	if prop is MeshInstance3D:
+		parts.append(prop)
+	for part: MeshInstance3D in parts:
+		part.material_override = material
+	return prop
 
 func _init_perimeter_walls(width: int, height: int) -> void:
 	for child in perimeter_walls.get_children():
@@ -218,13 +261,23 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 				var q1_pos: Vector3 = Vector3(-0.78 + (rand_b - 0.5) * 0.25, 0.0, -0.78 + (rand_a - 0.5) * 0.25)
 				if rand_a > 0.36:
 					var tree_idx: int = int(rand_b * float(healthy_trees.size())) % healthy_trees.size()
-					var tree_instance: Node3D = healthy_trees[tree_idx].instantiate() as Node3D
+					var tree_instance: Node3D = _make_vegetation(healthy_trees[tree_idx])
 					var scale_xz: float = 1.10 + (rand_a * 0.25)
 					var scale_y: float = 1.55 + (rand_a * 0.35)
 					tree_instance.scale = Vector3(scale_xz, scale_y, scale_xz)
 					tree_instance.rotation.y = rand_b * TAU
 					tree_instance.position = q1_pos
 					tree_holder.add_child(tree_instance)
+					var tree_height: float = 0.0
+					var meshes: Array[Node] = tree_instance.find_children("*", "MeshInstance3D", true, false)
+					if tree_instance is MeshInstance3D:
+						meshes.append(tree_instance)
+					for node: Node in meshes:
+						var mesh: MeshInstance3D = node as MeshInstance3D
+						var bounds: AABB = mesh.global_transform * mesh.get_aabb()
+						tree_height = maxf(tree_height, bounds.end.y - tree_instance.global_position.y)
+					cell_holder.set_meta("tree_height", tree_height)
+					cell_holder.set_meta("tree_base", q1_pos)
 
 					var trunk_body: StaticBody3D = StaticBody3D.new()
 					trunk_body.name = "TreeCollider"
@@ -240,7 +293,7 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 				var q2_pos: Vector3 = Vector3(0.82 + (rand_a - 0.5) * 0.22, 0.0, -0.75 + (rand_b - 0.5) * 0.22)
 				if rand_b > 0.30:
 					if rand_a > 0.45:
-						var fern_inst: Node3D = fern_scene.instantiate() as Node3D
+						var fern_inst: Node3D = _make_vegetation(fern_scene)
 						var fs: float = 0.15 + (rand_a * 0.04)
 						fern_inst.scale = Vector3(fs, fs, fs)
 						fern_inst.position = q2_pos
@@ -248,7 +301,7 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 						fern_inst.name = "WindPlant_Fern"
 						plant_holder.add_child(fern_inst)
 					else:
-						var pbig_inst: Node3D = plant_big_scene.instantiate() as Node3D
+						var pbig_inst: Node3D = _make_vegetation(plant_big_scene)
 						var ps: float = 0.24 + (rand_b * 0.08)
 						pbig_inst.scale = Vector3(ps, ps, ps)
 						pbig_inst.position = q2_pos
@@ -259,19 +312,19 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 				var q3_pos: Vector3 = Vector3(-0.75 + (rand_b - 0.5) * 0.22, 0.0, 0.82 + (rand_a - 0.5) * 0.22)
 				if rand_a > 0.38:
 					if rand_b > 0.72:
-						var log_inst: Node3D = kenney_log_scene.instantiate() as Node3D
+						var log_inst: Node3D = _textured_prop(kenney_log_scene, preload("res://assets/textures/field/bark.tres"))
 						log_inst.scale = Vector3(2.2, 2.2, 2.2)
 						log_inst.position = q3_pos
 						log_inst.rotation.y = rand_a * TAU
 						plant_holder.add_child(log_inst)
 					elif rand_b > 0.56:
-						var stump_inst: Node3D = kenney_stump_scene.instantiate() as Node3D
+						var stump_inst: Node3D = _textured_prop(kenney_stump_scene, preload("res://assets/textures/field/bark.tres"))
 						stump_inst.scale = Vector3(2.2, 2.2, 2.2)
 						stump_inst.position = q3_pos
 						stump_inst.rotation.y = rand_b * TAU
 						plant_holder.add_child(stump_inst)
 					else:
-						var bush_inst: Node3D = bush_scene.instantiate() as Node3D
+						var bush_inst: Node3D = _make_vegetation(bush_scene)
 						var bs: float = 0.55 + (rand_b * 0.17)
 						bush_inst.scale = Vector3(bs, bs, bs)
 						bush_inst.position = q3_pos
@@ -282,7 +335,7 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 				var q4_pos: Vector3 = Vector3(0.78 + (rand_a - 0.5) * 0.22, 0.0, 0.78 + (rand_b - 0.5) * 0.22)
 				if rand_b > 0.20:
 					if rand_a > 0.82:
-						var rock_inst: Node3D = rock_med_scene.instantiate() as Node3D
+						var rock_inst: Node3D = _textured_prop(rock_med_scene, preload("res://assets/textures/field/stone.tres"))
 						var rs: float = 0.24 + (rand_b * 0.10)
 						rock_inst.scale = Vector3(rs, rs, rs)
 						rock_inst.position = q4_pos
@@ -296,7 +349,7 @@ func _init_forest_vegetation(width: int, height: int) -> void:
 						mush_inst.rotation.y = rand_b * TAU
 						plant_holder.add_child(mush_inst)
 					else:
-						var grass_inst: Node3D = grass_scene.instantiate() as Node3D
+						var grass_inst: Node3D = _make_vegetation(grass_scene)
 						var gs: float = 0.45 + (rand_a * 0.17)
 						grass_inst.scale = Vector3(gs, gs, gs)
 						grass_inst.position = q4_pos
@@ -319,7 +372,7 @@ func _init_border_forest(width: int, height: int) -> void:
 			var rand_val: float = hash_val - floorf(hash_val)
 			if rand_val > 0.35:
 				var tree_idx: int = int(rand_val * float(healthy_trees.size())) % healthy_trees.size()
-				var tree_inst: Node3D = healthy_trees[tree_idx].instantiate() as Node3D
+				var tree_inst: Node3D = _make_vegetation(healthy_trees[tree_idx])
 				var scale_xz: float = 1.15 + (rand_val * 0.30)
 				var scale_y: float = 1.65 + (rand_val * 0.40)
 				tree_inst.scale = Vector3(scale_xz, scale_y, scale_xz)
@@ -341,7 +394,7 @@ func _init_posko_and_fences(width: int, height: int) -> void:
 	tent_b.rotation.y = -0.3
 	props_container.add_child(tent_b)
 
-	var stack_a: Node3D = kenney_log_stack_scene.instantiate() as Node3D
+	var stack_a: Node3D = _textured_prop(kenney_log_stack_scene, preload("res://assets/textures/field/bark.tres"))
 	stack_a.scale = Vector3(2.4, 2.4, 2.4)
 	stack_a.position = Vector3(3.1 * cell_sz, 0.0, 3.1 * cell_sz)
 	props_container.add_child(stack_a)
@@ -358,24 +411,24 @@ func _init_posko_and_fences(width: int, height: int) -> void:
 	props_container.add_child(sign_a)
 
 	for x in range(width):
-		var fn_top: Node3D = kenney_fence_scene.instantiate() as Node3D
+		var fn_top: Node3D = _textured_prop(kenney_fence_scene, preload("res://assets/textures/field/timber.tres"))
 		fn_top.scale = Vector3(cell_sz, cell_sz, cell_sz)
 		fn_top.position = Vector3(float(x) * cell_sz, 0.0, -0.05)
 		props_container.add_child(fn_top)
 
-		var fn_bot: Node3D = kenney_fence_scene.instantiate() as Node3D
+		var fn_bot: Node3D = _textured_prop(kenney_fence_scene, preload("res://assets/textures/field/timber.tres"))
 		fn_bot.scale = Vector3(cell_sz, cell_sz, cell_sz)
 		fn_bot.position = Vector3(float(x) * cell_sz, 0.0, float(height) * cell_sz - cell_sz * 0.05)
 		props_container.add_child(fn_bot)
 
 	for y in range(height):
-		var fn_left: Node3D = kenney_fence_scene.instantiate() as Node3D
+		var fn_left: Node3D = _textured_prop(kenney_fence_scene, preload("res://assets/textures/field/timber.tres"))
 		fn_left.scale = Vector3(cell_sz, cell_sz, cell_sz)
 		fn_left.rotation.y = PI * 0.5
 		fn_left.position = Vector3(-0.05, 0.0, float(y) * cell_sz)
 		props_container.add_child(fn_left)
 
-		var fn_right: Node3D = kenney_fence_scene.instantiate() as Node3D
+		var fn_right: Node3D = _textured_prop(kenney_fence_scene, preload("res://assets/textures/field/timber.tres"))
 		fn_right.scale = Vector3(cell_sz, cell_sz, cell_sz)
 		fn_right.rotation.y = -PI * 0.5
 		fn_right.position = Vector3(float(width) * cell_sz - cell_sz * 0.05, 0.0, float(y) * cell_sz)
@@ -494,6 +547,8 @@ func _update_cell_visual(pos: Vector2i, cell: PeatCellData) -> void:
 	var target_color: Color = Color.WHITE
 	var show_heatmap: bool = GameState.is_thermal_active or (GameState.current_phase == ToolEnums.GamePhase.PLANNING)
 
+	var wetness_data: float = clampf(cell.soil_moisture, 0.0, 1.0)
+	multi_mesh_instance.multimesh.set_instance_custom_data(index, Color(wetness_data, float(not show_heatmap), 0.0, 1.0))
 	if show_heatmap:
 		if cell.has_well:
 			target_color = Color(0.15, 0.65, 1.0, 1.0)
@@ -509,7 +564,7 @@ func _update_cell_visual(pos: Vector2i, cell: PeatCellData) -> void:
 		if cell.has_well:
 			target_color = Color(0.16, 0.34, 0.28, 1.0)
 		elif cell.is_burning():
-			target_color = Color(0.88, 0.28, 0.06, 1.0)
+			target_color = Color(0.23, 0.12, 0.075, 1.0)
 		elif cell.has_ember():
 			target_color = Color(0.16, 0.10, 0.07, 1.0)
 		elif cell.is_firebreak:
@@ -555,14 +610,14 @@ func _update_cell_visual(pos: Vector2i, cell: PeatCellData) -> void:
 			if tree_holder != null:
 				tree_holder.visible = true
 				tree_holder.process_mode = Node.PROCESS_MODE_INHERIT
-				if cell.is_burning() or cell.is_burnt:
+				if cell.is_burnt and not cell.is_burning():
 					if tree_holder.get_child_count() > 0:
 						var first_tree: Node3D = tree_holder.get_child(0)
 						if not first_tree.name.begins_with("DeadTree") and not first_tree.name.begins_with("TreeCollider"):
 							var old_rot: float = first_tree.rotation.y
 							var old_pos: Vector3 = first_tree.position
 							first_tree.queue_free()
-							var dead_inst: Node3D = dead_trees[0].instantiate() as Node3D
+							var dead_inst: Node3D = _make_vegetation(dead_trees[0])
 							dead_inst.name = "DeadTree"
 							dead_inst.rotation.y = old_rot
 							dead_inst.position = old_pos
@@ -582,6 +637,10 @@ func _sync_cell_vfx(pos: Vector2i, cell: PeatCellData) -> void:
 		if not vfx_nodes.has(pos):
 			var vfx_inst: CellHazardVFX = hazard_vfx_scene.instantiate() as CellHazardVFX
 			vfx_inst.position = Vector3(float(pos.x) * GameState.CELL_SIZE, 0.0, float(pos.y) * GameState.CELL_SIZE)
+			var holder: Node3D = cell_visual_nodes.get(pos)
+			if holder != null and holder.has_meta("tree_height"):
+				vfx_inst.tree_height = holder.get_meta("tree_height")
+				vfx_inst.tree_base = holder.get_meta("tree_base")
 			vfx_container.add_child(vfx_inst)
 			vfx_nodes[pos] = vfx_inst
 		var vfx: CellHazardVFX = vfx_nodes[pos]
@@ -591,6 +650,7 @@ func _sync_cell_vfx(pos: Vector2i, cell: PeatCellData) -> void:
 		if vfx_nodes.has(pos):
 			var old_vfx: CellHazardVFX = vfx_nodes[pos]
 			vfx_nodes.erase(pos)
+			old_vfx.update_state(cell, GameState.is_thermal_active, GameState.wind_direction, false)
 			get_tree().create_timer(1.2).timeout.connect(func() -> void:
 				if is_instance_valid(old_vfx):
 					old_vfx.queue_free()
@@ -601,14 +661,21 @@ func _update_dynamic_fog(delta: float) -> void:
 		return
 	var hazard_ratio: float = clampf(float(GameState.active_fire_cells) / 14.0, 0.0, 1.0)
 	var rain_ratio: float = clampf(GameState.global_rainfall_rate / 12.0, 0.0, 1.0)
-	var target_density: float = lerpf(0.010, 0.032, hazard_ratio) + rain_ratio * 0.004
+	var overcast_step: int = roundi(rain_ratio * 12.0)
+	if overcast_step != sky_overcast_step:
+		sky_overcast_step = overcast_step
+		for material: ShaderMaterial in canopy_materials.values():
+			material.set_shader_parameter("wetness", rain_ratio)
+		var sky_material: ShaderMaterial = world_env.environment.sky.sky_material as ShaderMaterial
+		sky_material.set_shader_parameter("overcast", float(overcast_step) / 12.0)
+	var target_density: float = lerpf(0.006, 0.029, hazard_ratio) + rain_ratio * 0.004
 	var clear_sky: Color = Color(0.58, 0.74, 0.86)
 	var smoky_sky: Color = Color(0.66, 0.54, 0.42)
 	var target_color: Color = clear_sky.lerp(smoky_sky, hazard_ratio)
 	target_color = target_color.lerp(Color(0.36, 0.43, 0.51), rain_ratio * 0.45)
 	world_env.environment.fog_density = lerpf(world_env.environment.fog_density, target_density, delta * 1.5)
 	world_env.environment.fog_light_color = world_env.environment.fog_light_color.lerp(target_color, delta * 1.5)
-	world_env.environment.background_color = world_env.environment.background_color.lerp(target_color, delta * 1.5)
+	world_env.environment.fog_sky_affect = lerpf(0.23, 0.76, maxf(hazard_ratio, rain_ratio))
 
 func _on_graphics_quality_changed(_quality: int) -> void:
 	_apply_sun_quality()
@@ -616,3 +683,4 @@ func _on_graphics_quality_changed(_quality: int) -> void:
 func _apply_sun_quality() -> void:
 	if sun_light != null:
 		sun_light.shadow_enabled = (GameState.current_graphics_quality != GameState.GraphicsQuality.LOW)
+		get_viewport().msaa_3d = Viewport.MSAA_2X if GameState.current_graphics_quality == GameState.GraphicsQuality.HIGH else Viewport.MSAA_DISABLED

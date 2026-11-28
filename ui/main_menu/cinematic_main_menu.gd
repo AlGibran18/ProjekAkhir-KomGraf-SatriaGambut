@@ -47,13 +47,13 @@ func _build_background() -> void:
 	image_bg = TextureRect.new()
 	image_bg.name = "CinematicPeatlandBackdrop"
 	image_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	image_bg.texture = load("res://ui/main_menu/cinematic_peatland_bg.svg") as Texture2D
+	image_bg.texture = preload("res://ui/main_menu/rainforest_trail.jpg")
 	image_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	image_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	add_child(image_bg)
 	image_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var gradient: Gradient = Gradient.new()
-	gradient.set_color(0, Color(0.01, 0.025, 0.012, 0.0))
+	gradient.set_color(0, Color(0.018, 0.034, 0.028, 0.22))
 	gradient.set_color(1, Color(0.01, 0.025, 0.012, 0.78))
 	var tex: GradientTexture2D = GradientTexture2D.new()
 	tex.gradient = gradient

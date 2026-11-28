@@ -43,7 +43,7 @@ func _process(delta: float) -> void:
 	rain_fraction = move_toward(rain_fraction, rain_target, delta * 0.35)
 	rain_particles.global_position = tracked_player.global_position + Vector3(0.0, 6.0, 0.0)
 	rain_particles.emitting = rain_fraction > 0.08
-	ground_splashes.global_position = Vector3(tracked_player.global_position.x, 0.15, tracked_player.global_position.z)
+	ground_splashes.global_position = Vector3(tracked_player.global_position.x, 0.012, tracked_player.global_position.z)
 	ground_splashes.emitting = rain_fraction > 0.12
 	var wind: Vector2 = GameState.wind_direction * clampf(GameState.wind_speed_kmh / 15.0, 0.2, 2.5)
 	var process_mat: ParticleProcessMaterial = rain_particles.process_material as ParticleProcessMaterial
@@ -68,6 +68,7 @@ func _create_rain() -> void:
 	material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
 	material.emission_box_extents = Vector3(8.0, 1.8, 8.0)
 	material.direction = Vector3(0, -1, 0)
+	material.particle_flag_align_y = true
 	material.spread = 8.0
 	material.initial_velocity_min = 11.0
 	material.initial_velocity_max = 16.0
@@ -78,12 +79,7 @@ func _create_rain() -> void:
 	rain_particles.process_material = material
 	var streak: QuadMesh = QuadMesh.new()
 	streak.size = Vector2(0.025, 0.55)
-	var streak_mat: StandardMaterial3D = StandardMaterial3D.new()
-	streak_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	streak_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	streak_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	streak_mat.albedo_color = Color(0.65, 0.83, 1.0, 0.42)
-	streak.material = streak_mat
+	streak.material = preload("res://environment/vfx/water_drop.tres")
 	rain_particles.draw_pass_1 = streak
 	add_child(rain_particles)
 
@@ -101,23 +97,16 @@ func _create_ground_splashes() -> void:
 	ground_splashes.visibility_aabb = AABB(Vector3(-9.0, -1.0, -9.0), Vector3(18.0, 4.0, 18.0))
 	var material: ParticleProcessMaterial = ParticleProcessMaterial.new()
 	material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	material.emission_box_extents = Vector3(7.2, 0.04, 7.2)
-	material.direction = Vector3.UP
-	material.spread = 55.0
-	material.initial_velocity_min = 0.35
-	material.initial_velocity_max = 1.3
-	material.gravity = Vector3(0.0, -7.0, 0.0)
-	material.scale_min = 0.35
+	material.emission_box_extents = Vector3(7.2, 0.002, 7.2)
+	material.gravity = Vector3.ZERO
+	material.scale_min = 0.55
 	material.scale_max = 1.0
 	material.color = Color(0.66, 0.82, 0.95, 0.38)
 	ground_splashes.process_material = material
-	var mesh: QuadMesh = QuadMesh.new()
-	mesh.size = Vector2(0.06, 0.08)
-	var splash_material: StandardMaterial3D = StandardMaterial3D.new()
-	splash_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	splash_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	splash_material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	splash_material.albedo_color = Color(0.67, 0.84, 0.96, 0.45)
+	var mesh: PlaneMesh = PlaneMesh.new()
+	mesh.size = Vector2(0.32, 0.32)
+	var splash_material: ShaderMaterial = ShaderMaterial.new()
+	splash_material.shader = preload("res://environment/vfx/rain_ripple.gdshader")
 	mesh.material = splash_material
 	ground_splashes.draw_pass_1 = mesh
 	add_child(ground_splashes)

@@ -1,6 +1,18 @@
-[gd_scene load_steps=11 format=3 uid="uid://c8q3w8kfv5e5v"]
+[gd_scene format=3 uid="uid://c8q3w8kfv5e5v"]
 
 [ext_resource type="Script" path="res://simulation/view/simulation_view_3d.gd" id="1_view"]
+
+[ext_resource type="Shader" path="res://simulation/view/peat_sky.gdshader" id="2_sky"]
+
+[ext_resource type="Texture2D" path="res://assets/textures/field/veld_sky.hdr" id="panorama"]
+[ext_resource type="Material" path="res://assets/textures/field/peat.tres" id="forest_floor"]
+
+[sub_resource type="ShaderMaterial" id="SkyMaterial"]
+shader = ExtResource("2_sky")
+shader_parameter/panorama = ExtResource("panorama")
+
+[sub_resource type="Sky" id="ForestSky"]
+sky_material = SubResource("SkyMaterial")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cursor"]
 transparency = 1
@@ -18,20 +30,21 @@ size = Vector3(0.1, 0.04, 2.96)
 [sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
 size = Vector3(120, 2, 120)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_apron"]
-albedo_color = Color(0.12, 0.14, 0.08, 1)
-roughness = 0.95
-
 [sub_resource type="PlaneMesh" id="PlaneMesh_apron"]
-material = SubResource("StandardMaterial3D_apron")
+material = ExtResource("forest_floor")
 size = Vector2(140, 140)
 
 [sub_resource type="Environment" id="Environment_main"]
-background_mode = 1
+background_mode = 2
+sky = SubResource("ForestSky")
 background_color = Color(0.58, 0.74, 0.86, 1)
 ambient_light_source = 2
-ambient_light_color = Color(0.7, 0.68, 0.62, 1)
+ambient_light_sky_contribution = 0.32
+ambient_light_energy = 1.05
+reflected_light_source = 2
+ambient_light_color = Color(0.88, 0.89, 0.85, 1)
 fog_enabled = true
+fog_sky_affect = 0.23
 fog_light_color = Color(0.62, 0.65, 0.68, 1)
 fog_density = 0.012
 
@@ -85,8 +98,10 @@ fov = 55.0
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 22.5, 28, 22.5)
-light_color = Color(1, 0.95, 0.86, 1)
+light_color = Color(1, 0.88, 0.69, 1)
 shadow_enabled = true
+directional_shadow_max_distance = 65.0
+shadow_bias = 0.035
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_main")

@@ -1,7 +1,13 @@
-[gd_scene load_steps=15 format=3 uid="uid://dw7x4n9k2p8qa"]
+[gd_scene format=3 uid="uid://dw7x4n9k2p8qa"]
 
 [ext_resource type="PackedScene" path="res://assets/models/kenney/platform_stone.glb" id="1_platform"]
 [ext_resource type="PackedScene" path="res://assets/models/kenney/rock_smallFlatA.glb" id="2_rock"]
+
+[ext_resource type="Texture2D" path="res://assets/textures/field/alloy_color.jpg" id="alloy_color"]
+
+[ext_resource type="Texture2D" path="res://assets/textures/field/alloy_normal.jpg" id="alloy_normal"]
+
+[ext_resource type="Texture2D" path="res://assets/textures/field/alloy_rough.jpg" id="alloy_rough"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ring"]
 transparency = 1
@@ -15,6 +21,14 @@ bottom_radius = 1.45
 height = 0.03
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tank"]
+albedo_texture = ExtResource("alloy_color")
+normal_enabled = true
+normal_texture = ExtResource("alloy_normal")
+normal_scale = 0.4
+roughness_texture = ExtResource("alloy_rough")
+roughness_texture_channel = 0
+uv1_triplanar = true
+uv1_scale = Vector3(3,3,3)
 albedo_color = Color(0.1, 0.54, 0.9, 1)
 roughness = 0.35
 
@@ -25,6 +39,14 @@ bottom_radius = 0.52
 height = 1.25
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_band"]
+albedo_texture = ExtResource("alloy_color")
+normal_enabled = true
+normal_texture = ExtResource("alloy_normal")
+normal_scale = 0.4
+roughness_texture = ExtResource("alloy_rough")
+roughness_texture_channel = 0
+uv1_triplanar = true
+uv1_scale = Vector3(3,3,3)
 albedo_color = Color(0.14, 0.16, 0.18, 1)
 metallic = 0.4
 roughness = 0.5
@@ -42,6 +64,14 @@ bottom_radius = 0.26
 height = 0.1
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pump"]
+albedo_texture = ExtResource("alloy_color")
+normal_enabled = true
+normal_texture = ExtResource("alloy_normal")
+normal_scale = 0.4
+roughness_texture = ExtResource("alloy_rough")
+roughness_texture_channel = 0
+uv1_triplanar = true
+uv1_scale = Vector3(3,3,3)
 albedo_color = Color(0.95, 0.42, 0.12, 1)
 roughness = 0.45
 
